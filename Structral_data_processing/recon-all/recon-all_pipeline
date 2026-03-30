@@ -1,0 +1,23 @@
+#!/bin/bash
+
+
+export FREESURFER_HOME=/Applications/freesurfer/8.1.0
+source $FREESURFER_HOME/SetUpFreeSurfer.sh
+nano xxx.sh
+# type the following code in the xxx.sh file and save it
+
+chmod +x prereading_recon.sh
+./prereading_recon.sh
+
+import xxx
+在 VS Code 里：
+	1.	按 Cmd + Shift + P
+	2.	输入：Python: Select Interpreter
+	3.	选一个你刚刚安装 pandas 的 Python（比如带 (venv) 或 /usr/bin/python3）
+
+#infant_fs_subjects
+#toddler_fs_subjects
+#prereading_fs_subjects
+#beginreading_fs_subjects
+#emereading_fs_subjects
+

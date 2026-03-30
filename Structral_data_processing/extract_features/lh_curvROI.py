@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 # 设置路径
-os.chdir("/Users/molin/Downloads/ds006169-test/toddler_fs_subjects")
+os.chdir("/Users/molin/Downloads/files/ds006169-2/structural_data_features")
 
 # 读文件（改成 meancurv）
 df = pd.read_csv("lh_curv.txt", sep=r"\s+")

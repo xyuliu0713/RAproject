@@ -1,6 +1,7 @@
 import pandas as pd
 import os
-os.chdir("/Users/molin/Downloads/ds006169-test/toddler_fs_subjects")  # 修改为你的数据目录
+
+os.chdir("/Users/molin/Downloads/files/ds006169-2/structural_data_features")
 
 # 读文件
 df = pd.read_csv("lh_volume.txt", sep=r"\s+")
