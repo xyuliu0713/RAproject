@@ -7,7 +7,7 @@ source $FREESURFER_HOME/SetUpFreeSurfer.sh
 
 # SUBJECTS_DIR=/Users/molin/Downloads/ds006169-test/infant_fs_subjects
 
-SUBJECTS_DIR=/Users/molin/Downloads/files/ds006169-2/beginreading_fs_subjects
+SUBJECTS_DIR=/Users/molin/Downloads/files/ds006169-2/emereading_fs_subjects
 #toddler_fs_subjects
 #prereading_fs_subjects
 #beginreading_fs_subjects
