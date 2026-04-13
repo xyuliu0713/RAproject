@@ -34,7 +34,14 @@ aparcstats2table \
   --meas volume \
   --tablefile lh_volume.txt
 
-4.	curvature
+4.	white matter volume
+  asegstats2table \
+  --subjects $(ls $SUBJECTS_DIR | grep '^sub') \
+  --hemi lh \
+  --meas volume \
+  --tablefile aseg_volume.txt
+
+5.	curvature
 aparcstats2table \
   --subjects $(ls $SUBJECTS_DIR | grep '^sub') \
   --hemi lh \

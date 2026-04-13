@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# ========================
+# 输入路径（你的原始数据）
+# ========================
+SRC="/Users/molin/Downloads/files/ds006169-2/sub-02/ses-01/dwi"
+
+# ========================
+# 输出路径（pyAFQ dataset）
+# ========================
+DST="/Users/molin/Downloads/files/AFQ_dataset"
+
+# ========================
+# 1. 创建 BIDS 结构
+# ========================
+mkdir -p ${DST}/sub-02/ses-01/dwi
+mkdir -p ${DST}/derivatives/my_tractography/sub-02/ses-01/dwi
+
+# ========================
+# 2. 复制 DWI（并重命名）
+# ========================
+cp ${SRC}/sub-02_ses-01_dir-AP_dwi.nii.gz \
+${DST}/sub-02/ses-01/dwi/sub-02_ses-01_dwi.nii.gz
+
+cp ${SRC}/sub-02_ses-01_dir-AP_dwi.bval \
+${DST}/sub-02/ses-01/dwi/sub-02_ses-01_dwi.bval
+
+cp ${SRC}/sub-02_ses-01_dir-AP_dwi.bvec \
+${DST}/sub-02/ses-01/dwi/sub-02_ses-01_dwi.bvec
+
+# ========================
+# 3. 复制 tractography
+# ========================
+cp ${SRC}/tracks_2M.tck \
+${DST}/derivatives/my_tractography/sub-02/ses-01/dwi/sub-02_ses-01-dwi_tractography.tck
+
+# ========================
+# 4. 转换为 TRK（给 MATLAB 用）
+# ========================
+tckconvert \
+${DST}/derivatives/my_tractography/sub-02/ses-01/dwi/sub-02_ses-01-dwi_tractography.tck \
+${DST}/derivatives/my_tractography/sub-02/ses-01/dwi/sub-02_ses-01-dwi_tractography.trk
+
+echo "✅ Done: AFQ dataset ready!"

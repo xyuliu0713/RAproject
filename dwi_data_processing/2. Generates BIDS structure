@@ -1,0 +1,92 @@
+#!/bin/bash
+# 输入：MRtrix / FreeSurfer 处理好的 DWI 和 tractography, 输出：BIDS 兼容文件夹，供 pyAFQ 使用
+
+#!/bin/bash
+
+# ========================
+# 原始数据根目录
+# ========================
+SRC_ROOT="/Users/molin/Downloads/files/ds006169-2"
+
+# ========================
+# 输出目录（pyAFQ）
+# ========================
+DST="/Users/molin/Downloads/files/pyAFQ_dataset"
+
+# ========================
+# 遍历所有 subject
+# ========================
+for sub_dir in ${SRC_ROOT}/sub-*; do
+
+    sub=$(basename ${sub_dir})
+
+    # 遍历所有 session（自动适配 ses-01 到 ses-XX）
+    for ses_dir in ${sub_dir}/ses-*; do
+
+        # 如果 ses 不存在（避免报错）
+        [ -d "$ses_dir" ] || continue
+
+        ses=$(basename ${ses_dir})
+        dwi_dir="${ses_dir}/dwi"
+
+        # 如果没有 dwi，就跳过
+        [ -d "$dwi_dir" ] || continue
+
+        echo "🔄 Processing ${sub} ${ses}..."
+
+        # ========================
+        # 创建 BIDS 目录
+        # ========================
+        mkdir -p ${DST}/${sub}/${ses}/dwi
+        mkdir -p ${DST}/derivatives/my_tractography/${sub}/${ses}/dwi
+
+        # ========================
+        # 找到 DWI 文件（兼容 dir-AP / 其他情况）
+        # ========================
+        dwi_nii=$(ls ${dwi_dir}/*_dwi.nii.gz 2>/dev/null | head -n 1)
+        dwi_bval=$(ls ${dwi_dir}/*_dwi.bval 2>/dev/null | head -n 1)
+        dwi_bvec=$(ls ${dwi_dir}/*_dwi.bvec 2>/dev/null | head -n 1)
+
+        # 检查是否存在
+        if [ -z "$dwi_nii" ]; then
+            echo "⚠️  No DWI found for ${sub} ${ses}"
+            continue
+        fi
+
+        # ========================
+        # 复制 DWI（标准化命名）
+        # ========================
+        cp "$dwi_nii" ${DST}/${sub}/${ses}/dwi/${sub}_${ses}_dwi.nii.gz
+        cp "$dwi_bval" ${DST}/${sub}/${ses}/dwi/${sub}_${ses}_dwi.bval
+        cp "$dwi_bvec" ${DST}/${sub}/${ses}/dwi/${sub}_${ses}_dwi.bvec
+
+        # ========================
+        # tractography（tracks_2M）
+        # ========================
+        track_file=$(ls ${dwi_dir}/tracks_2M.tck 2>/dev/null)
+
+        if [ -f "$track_file" ]; then
+
+            # 定义输出路径
+            out_tck=${DST}/derivatives/my_tractography/${sub}/${ses}/dwi/${sub}_${ses}-dwi_tractography.tck
+            out_trk=${DST}/derivatives/my_tractography/${sub}/${ses}/dwi/${sub}_${ses}-dwi_tractography.trk
+
+            # 复制 .tck
+            cp "$track_file" "$out_tck"
+
+            # ========================
+            # ⭐ 关键：转换为 .trk
+            # ========================
+            tckconvert "$out_tck" "$out_trk" \
+                -reference ${DST}/${sub}/${ses}/dwi/${sub}_${ses}_dwi.nii.gz
+
+            echo "✅ Converted to TRK: ${sub} ${ses}"
+
+        else
+            echo "⚠️ No tracks_2M.tck for ${sub} ${ses}"
+        fi
+
+    done
+done
+
+echo "✅ All subjects processed!"

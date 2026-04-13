@@ -6,10 +6,11 @@ source $FREESURFER_HOME/SetUpFreeSurfer.sh
 nano xxx.sh
 # type the following code in the xxx.sh file and save it
 
-chmod +x prereading_recon.sh
-./prereading_recon.sh
+chmod +x xxx.sh
+./xxx.sh
 
-import xxx
+
+import Interpreter
 在 VS Code 里：
 	1.	按 Cmd + Shift + P
 	2.	输入：Python: Select Interpreter
