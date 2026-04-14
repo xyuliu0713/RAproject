@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash in /Volumes/xyu/files/ds006169-2/script/test4.sh
 
 BASE_DIR="/Volumes/xyu/files/ds006169-2"
 
@@ -41,7 +41,7 @@ for sub_dir in "${BASE_DIR}"/sub-*; do
         # ========================
         # 17. Tractography
         # ========================
-        if [ -f "tracks_2M.tck" ]; then
+        if [ -s "tracks_2M.tck" ]; then
             echo "⏭ Skip tractography (tracks exist)"
         else
             echo "▶ Running tractography..."

@@ -12,4 +12,19 @@ chmod +x prereading_recon.sh
 
 
 
+export SUBJECTS_DIR="/Users/molin/Downloads/tangdu_hosp/finished"
+T1_FILE="/Users/molin/Downloads/tangdu_hosp/finished/Temp_template1.nii"
+SUBJECT_ID="Freesurfer_hires"
+
+export FREESURFER_HOME=/Applications/freesurfer/8.1.0
+source $FREESURFER_HOME/SetUpFreeSurfer.sh
+
+recon-all \ 
+-i $T1_FILE \
+-s $SUBJECT_ID \
+-autorecon1 \
+-hires \
+-multistrip \
+-notal-check \
+-cw256
 

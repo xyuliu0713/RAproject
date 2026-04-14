@@ -1,0 +1,22 @@
+export FREESURFER_HOME=/Applications/freesurfer/8.1.0
+source $FREESURFER_HOME/SetUpFreeSurfer.sh
+
+DATA_DIR=/Volume/xyu/files/ds006169-2
+export SUBJECTS_DIR=$DATA_DIR/prereading_fs_subjects
+
+mkdir -p $SUBJECTS_DIR
+
+anatdir=$DATA_DIR/sub-05/ses-03/anat
+
+t1file=$(find "$anatdir" -name "*T1w.nii.gz" | head -n 1)
+
+recon-all -s sub-05 -i "$t1file" -all
+
+
+% autorecon1 分部跑，后面步骤需要手动继续跑
+
+recon-all -s sub-05 -i "$t1file" -autorecon1
+
+recon-all -s sub-05 -autorecon2
+
+recon-all -s sub-05 -autorecon3
