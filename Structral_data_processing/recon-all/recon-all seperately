@@ -1,3 +1,5 @@
+#!/bin/bash 
+
 export FREESURFER_HOME=/Applications/freesurfer/8.1.0
 source $FREESURFER_HOME/SetUpFreeSurfer.sh
 

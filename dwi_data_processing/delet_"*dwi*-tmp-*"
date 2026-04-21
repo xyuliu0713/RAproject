@@ -1,6 +1,9 @@
-% 删掉sub里面所有含dwi和-tmp-的文件夹，都在/dwi/里
+#!/bin/bash 
 
-% 先预览
+# 删掉sub里面所有含dwi和-tmp-的文件夹，都在/dwi/里
+
+# 先预览
 find /Volumes/xyu/files/ds006169-2 -type d -name "*dwi*-tmp-*"  
-% 删掉  
+
+# 删掉  
 find /Volumes/xyu/files/ds006169-2 -type d -name "*dwi*-tmp-*" -exec rm -rf {} +

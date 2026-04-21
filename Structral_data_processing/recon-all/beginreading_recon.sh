@@ -1,3 +1,5 @@
+#!/bin/bash 
+
 DATA_DIR=/Users/molin/Downloads/files/ds006169-2
 export SUBJECTS_DIR=$DATA_DIR/beginreading_fs_subjects
 

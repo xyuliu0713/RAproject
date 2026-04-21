@@ -1,0 +1,30 @@
+#!/bin/bash
+# convert dwi_preprocessed files from MRtrix3 to do AFQ in MATLAB
+
+# seperately
+mrconvert dwi_preproc.mif dwi_preproc.nii.gz -export_grad_fsl dwi_preproc.bvec dwi_preproc.bval -force
+
+# wholeloop
+BASE="/Volumes/xyu/files/ds006169-2"
+
+find "$BASE" -type f -name "dwi_preproc.mif" | while read -r mif; do
+
+    dir=$(dirname "$mif")
+
+    out_nii="$dir/dwi_preproc.nii.gz"
+
+    out_bvec="$dir/dwi_preproc.bvec"
+
+    out_bval="$dir/dwi_preproc.bval"
+
+    echo "Processing: $mif"
+
+    # 确保目录存在（保险）
+
+    mkdir -p "$dir"
+
+    mrconvert "$mif" "$out_nii" \
+        -export_grad_fsl "$out_bvec" "$out_bval" \
+        -force
+
+done

@@ -1,3 +1,4 @@
+#!/bin/bash 
 # run in the terminal, and then run the python scripts to extract features
 
 cd /Users/molin/Downloads/files/ds006169-2/structural_data_features

@@ -1,0 +1,167 @@
+%% ============================
+% 自动 DWI -> dt6 -> Tractography -> AFQ
+% =============================
+
+addpath(genpath('/Users/molin/Downloads/apps/AFQ-master'));
+addpath(genpath('/Users/molin/Downloads/apps/vistasoft'));
+addpath('/Users/molin/Downloads/apps/vistasoft/mrDiffusion');
+setenv('PATH', ['/opt/miniconda3/bin:' getenv('PATH')]);
+% setenv('ANTSPATH','/opt/miniconda3/bin')
+
+% ============================
+% 设置路径与被试列表
+% ============================
+% 如果有多个被试，可以写成 {'sub-01', 'sub-02', 'sub-03'}
+sub_ids = {'sub-01'}; 
+ses_ids = {'ses-03'}; 
+raw_base_dir = '/Volumes/xyu/files/ds006169-2';
+afq_base_dir = '/Volumes/xyu/files/AFQ';
+
+% ============================
+% 主循环
+% ============================
+for i = 1:length(sub_ids)
+    for s = 1:length(ses_ids)
+        
+        sub_id = sub_ids{i};
+        ses_id = ses_ids{s};
+        
+        disp(['>>> 正在处理: ', sub_id, ' | ', ses_id]);
+        
+        %% ============================
+        % 输入路径（BIDS）
+        % ============================
+        dwi_dir  = fullfile(raw_base_dir, sub_id, ses_id, 'dwi');
+        anat_dir = fullfile(raw_base_dir, sub_id, ses_id, 'anat');
+        
+        dwi_file  = fullfile(dwi_dir,  'dwi_preproc.nii.gz');
+        bvec_file = fullfile(dwi_dir,  'dwi_preproc.bvec');
+        bval_file = fullfile(dwi_dir,  'dwi_preproc.bval');
+        
+        t1_file   = fullfile(anat_dir, [sub_id '_' ses_id '_T1w.nii.gz']);
+        
+        %% ============================
+        % 输出路径（带 session）
+        % ============================
+        sub_out_dir = fullfile(afq_base_dir, sub_id, ses_id);
+        out_dti_dir = fullfile(sub_out_dir, 'dti');
+        fibers_dir  = fullfile(sub_out_dir, 'fibers');
+        
+        if ~exist(out_dti_dir, 'dir'), mkdir(out_dti_dir); end
+        if ~exist(fibers_dir, 'dir'), mkdir(fibers_dir); end
+        
+        %% ============================
+        % Step 1: dtiInit -> dt6.mat
+        % ============================
+        params = dtiInitParams;
+        params.coreg = 1;  % 或者关闭可视化
+        params.outDir         = out_dti_dir;
+        params.bvecsFile      = bvec_file;
+        params.bvalsFile      = bval_file;
+        params.phaseEncodeDir = 2;
+        % params.dwOutMm        = [2 2 2];
+        params.clobber        = true;
+        params.showFibers     = false;
+        params.batchMode      = true;
+        params.motionComp = 0;        % 🚨 关闭 motion correction
+        params.eddyCorrect = 0;       % 🚨 关闭 eddy correction
+        params.rohdeEddyCorrect = 0;  % 🚨 关键！关闭 Rohde（就是现在炸的这个）
+        
+        [dt6, outBaseDir] = dtiInit(dwi_file, t1_file, params);
+        disp(['✅ dt6 生成: ', dt6]);
+        
+        %% ============================
+        % Step 2: 复制 dt6 和 bin（⚠️ AFQ 必须）
+        % ============================
+        dt6_src = fullfile(out_dti_dir, 'dti30trilin', 'dt6.mat');
+        bin_src = fullfile(out_dti_dir, 'dti30trilin', 'bin');
+        
+        dt6_dst = fullfile(sub_out_dir, 'dt6.mat');
+        bin_dst = fullfile(sub_out_dir, 'bin');
+        
+        copyfile(dt6_src, dt6_dst);
+        copyfile(bin_src, bin_dst);
+        
+        disp('✅ dt6.mat 和 bin 已复制到 subject 根目录');
+        %% ============================
+        % Step 3: 使用已有 tck → pdb
+        %% ============================
+        tck_file = fullfile(dwi_dir, 'tracks_2M.tck');  
+        pdb_file = fullfile(fibers_dir, 'WholeBrainFG.pdb');
+
+        if ~exist(tck_file, 'file')
+            error('❌ tck 文件不存在: %s', tck_file);
+        end
+
+        fg = mrtrix_tck2pdb(tck_file, pdb_file);
+        disp('✅ tck → pdb 转换完成');
+
+        % 读取 fibers
+        fg = fgRead(pdb_file);
+
+        % 🚨 随机抽样（从200万 → 20万）
+        target_n = 200000;
+        if length(fg.fibers) > target_n
+        % 强制统一随机数行为（非常重要）
+            rng('default');
+            rng(0);
+            idx = randperm(length(fg.fibers), target_n);
+            fg.fibers = fg.fibers(idx);
+        end
+
+        % 保存为 AFQ 需要的 MAT 格式
+        mat_file = fullfile(fibers_dir, 'WholeBrainFG.mat');
+
+        % ❗删除旧文件（防止损坏残留）
+        if exist(mat_file, 'file')
+            delete(mat_file);
+        end
+
+        dtiWriteFiberGroup(fg, mat_file);
+
+        disp(['✅ 重建完成，fiber数: ', num2str(length(fg.fibers))]);
+
+        % （可选）同步更新 pdb
+        % fgWrite(fg, pdb_file);
+
+
+        %% ============================
+        % Debug：确认 fibers 非空（非常重要）
+        %% ============================
+        fg_check = fgRead(mat_file);
+        nFibers = length(fg_check.fibers);
+        disp(['Fiber 数量: ', num2str(nFibers)]);
+
+        if nFibers == 0
+            error('❌ pdb 中没有 fibers，请检查 tck 文件');
+        end
+
+        %% ============================
+        % Step 3: 创建 ROIs 文件夹
+        %% ============================
+        roi_dir = fullfile(sub_out_dir, 'ROIs');
+        if ~exist(roi_dir, 'dir')
+            mkdir(roi_dir);
+        end
+
+        %% ============================
+        % Step 4: 运行 AFQ（不再计算 tractography）
+        %% ============================
+        afq = AFQ_Create( ...
+            'sub_dirs', {sub_out_dir}, ...
+            'clobber', 1, ...
+            'computeCSD', 0, ...        % ❗关键：使用已有 fibers.
+            'numfibers', 200000, ...
+            'clip2rois', 1, ...         % 不裁剪 fibers
+            'normalization', 'ants', ...
+            'cleanFibers', 1, ...       % 自动去掉 outlier fibers
+            'computeProfiles', 1, ...
+            'numberOfNodes', 100, ...
+            'sub_group', 0 ...
+        );
+    
+        afq = AFQ_run({sub_out_dir}, 0, afq);
+        save(fullfile(sub_out_dir,'afq.mat'),'afq','-v7.3');
+        disp(['✅ ', sub_id, ' 的 AFQ 完成']);
+    end
+end

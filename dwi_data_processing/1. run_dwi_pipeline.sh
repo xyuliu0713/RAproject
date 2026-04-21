@@ -1,4 +1,5 @@
-#!/bin/bash in /Volumes/xyu/files/ds006169-2/script/test.sh
+#!/bin/bash 
+# in /Volumes/xyu/files/ds006169-2/script/test.sh
 
 BASE_DIR="/Volumes/xyu/files/ds006169-2"
 FS_BASE="/Volumes/xyu/files/ds006169-2"
