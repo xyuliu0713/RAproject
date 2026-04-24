@@ -1,0 +1,125 @@
+import os
+
+import shutil
+
+base_dir = '/Volumes/xyu/files/ds006169-2'
+
+sub_ids = [d for d in os.listdir(base_dir) if d.startswith('sub-')]
+
+for sub in sub_ids:
+
+    sub_path = os.path.join(base_dir, sub)
+
+    if not os.path.isdir(sub_path):
+
+        continue
+
+    ses_ids = [d for d in os.listdir(sub_path) if d.startswith('ses-')]
+
+    for ses in ses_ids:
+
+        dwi_dir = os.path.join(sub_path, ses, 'dwi')
+
+        if not os.path.exists(dwi_dir):
+
+            continue
+
+        # ============================
+
+        # INPUT FILES
+
+        # ============================
+
+        dwi_in  = os.path.join(dwi_dir, 'dwi_preproc.nii.gz')
+
+        bval_in = os.path.join(dwi_dir, 'dwi_preproc.bval')
+
+        bvec_in = os.path.join(dwi_dir, 'dwi_preproc.bvec')
+
+        tck_in  = os.path.join(dwi_dir, 'tracks100000.tck')
+
+        # 如果关键文件不存在就跳过
+
+        if not os.path.exists(dwi_in):
+
+            continue
+
+        # ============================
+
+        # OUTPUT DIR (mrtrix + tractography)
+
+        # ============================
+
+        mrtrix_dir = os.path.join(
+
+            base_dir,
+
+            'derivatives',
+
+            'mrtrix',
+
+            sub,
+
+            ses,
+
+            'dwi'
+
+        )
+
+        tract_dir = os.path.join(
+
+            base_dir,
+
+            'derivatives',
+
+            'my_tractography',
+
+            sub,
+
+            ses,
+
+            'dwi'
+
+        )
+
+        os.makedirs(mrtrix_dir, exist_ok=True)
+
+        os.makedirs(tract_dir, exist_ok=True)
+
+        # ============================
+
+        # OUTPUT FILE NAMES
+
+        # ============================
+
+        dwi_out  = os.path.join(mrtrix_dir, f'{sub}_{ses}_dwi.nii.gz')
+
+        bval_out = os.path.join(mrtrix_dir, f'{sub}_{ses}_dwi.bval')
+
+        bvec_out = os.path.join(mrtrix_dir, f'{sub}_{ses}_dwi.bvec')
+
+        tck_out = os.path.join(
+
+            tract_dir,
+
+            f'{sub}_{ses}_dwi_tractography.tck'
+
+        )
+
+        # ============================
+
+        # COPY + RENAME
+
+        # ============================
+
+        shutil.copy2(dwi_in, dwi_out)
+
+        shutil.copy2(bval_in, bval_out)
+
+        shutil.copy2(bvec_in, bvec_out)
+
+        if os.path.exists(tck_in):
+
+            shutil.copy2(tck_in, tck_out)
+
+        print(f"Processed: {sub} {ses}")

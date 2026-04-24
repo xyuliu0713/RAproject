@@ -1,0 +1,30 @@
+#!/bin/bash 
+
+# 删掉sub里面所有含dwi和-tmp-的文件夹，都在/dwi/里
+
+# 先预览
+find /Volumes/xyu/files/ds006169-2 -type d -name "*dwi*-tmp-*"  
+
+# 删掉  
+find /Volumes/xyu/files/ds006169-2 -type d -name "*dwi*-tmp-*" -exec rm -rf {} +
+
+
+# 删掉dwi里面所有track2M.trk文件
+
+# 先预览
+find /Volumes/xyu/files/ds006169-2/ -path "*/dwi/tracks_2M.tck" 
+find /Volumes/xyu/files/ds006169-2/ -path "*/dwi/tracks_2M.tck" | wc -l
+
+# 删掉
+find /Volumes/xyu/files/ds006169-2/ -path "*/dwi/tracks_2M.tck" | while read f; do
+    echo "Deleting: $f"
+    rm "$f"
+done
+
+
+# 删掉anat/fmap/dwi里面所有bids format的文件
+find /Volumes/xyu/ds006169 -type d -name anat -exec find {} -type f ! -name "*_T1w.nii.gz" ! -name "*_T1w.json" -delete \;
+
+find /Volumes/xyu/ds006169 -type d -name fmap -exec find {} -type f ! -name "*_epi.nii.gz" ! -name "*_epi.json" -delete \;
+
+find /Volumes/xyu/ds006169 -type d -name dwi -exec find {} -type f ! -name "*dwi.nii.gz" ! -name "*_dwi.json" ! -name "*_dwi.bval" ! -name "*_dwi.bvec" -delete \;

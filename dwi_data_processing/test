@@ -1,0 +1,111 @@
+#!/bin/bash
+
+BIDS_DIR=/Volumes/xyu/files/ds006169
+
+OUT_DIR=/path/to/output
+
+PIPELINE=/path/to/your_script.sh
+
+mkdir -p ${OUT_DIR}/logs
+
+for sub in ${BIDS_DIR}/sub-*; do
+
+    subj=$(basename ${sub})
+
+    echo "============================"
+
+    echo "Subject: ${subj}"
+
+    echo "============================"
+
+    for ses in ${sub}/ses-*; do
+
+        [[ -d "$ses" ]] || continue
+
+        sess=$(basename ${ses})
+
+        echo "--- Session: ${sess}"
+
+        # =========================
+
+        # 1. FIND DWI
+
+        # =========================
+
+        dwi=$(find ${ses}/dwi -name "*dwi*.nii.gz" 2>/dev/null | head -n 1)
+
+        bvec=$(find ${ses}/dwi -name "*.bvec" 2>/dev/null | head -n 1)
+
+        bval=$(find ${ses}/dwi -name "*.bval" 2>/dev/null | head -n 1)
+
+        if [[ -z "$dwi" || -z "$bvec" || -z "$bval" ]]; then
+
+            echo "Missing DWI in ${subj}/${sess}, skip"
+
+            continue
+
+        fi
+
+        # =========================
+
+        # 2. FIND ANAT
+
+        # =========================
+
+        anat=$(find ${ses}/anat -name "*T1w*.nii.gz" 2>/dev/null | head -n 1)
+
+        if [[ -z "$anat" ]]; then
+
+            echo "Missing T1 in ${subj}/${sess}, skip"
+
+            continue
+
+        fi
+
+        # =========================
+
+        # 3. FIND FMAP (reverse PE)
+
+        # =========================
+
+        rev=$(find ${ses}/fmap -name "*dir-PA*nii.gz" 2>/dev/null | head -n 1)
+
+        # =========================
+
+        # 4. OUTPUT DIR
+
+        # =========================
+
+        out=${OUT_DIR}/${subj}/${sess}
+
+        mkdir -p ${out}
+
+        log=${OUT_DIR}/logs/${subj}_${sess}.log
+
+        echo "Running pipeline..."
+
+        bash ${PIPELINE} \
+
+            -m ${dwi} \
+
+            -r ${rev} \
+
+            -t 1 \
+
+            -a ${anat} \
+
+            -o ${out} \
+
+            -x ${bvec} \
+
+            -l ${bval} \
+
+            -f msmt \
+
+            > ${log} 2>&1
+
+        echo "Done: ${subj} ${sess}"
+
+    done
+
+done

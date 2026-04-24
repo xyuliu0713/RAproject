@@ -1,0 +1,27 @@
+#!/bin/bash
+# 递归遍历整个目录，把所有 .mif 文件批量转换成 .nii.gz
+
+# mrconvert $dwi_dir/dwi_bias_ants_pa.mif $dwi_dir/dwi_bias_ants_pa.nii.gz  -force -quiet -nthreads 55 -datatype uint16
+
+
+base_dir="/Volumes/xyu/files/ds006169-2"
+
+# 找到所有 .mif 文件
+
+total=$(find "$base_dir" -name "*.mif" | wc -l)
+count=0
+
+echo "Total files: $total"
+echo "Starting conversion..."
+
+find "$base_dir" -name "*.mif" | while read mif; do
+    ((count++))
+
+    nii="${mif%.mif}.nii.gz"
+
+    echo "[$count/$total] Converting: $mif"
+
+    mrconvert "$mif" "$nii" -force -quiet -nthreads 8
+done
+
+echo "Done!"

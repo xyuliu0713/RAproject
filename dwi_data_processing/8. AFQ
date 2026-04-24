@@ -1,0 +1,51 @@
+#!/bin/python
+
+import os
+
+import os.path as op
+
+from AFQ.api.group import GroupAFQ
+
+import bids
+
+# ============================
+
+# BIDS 数据根目录
+
+# ============================
+
+bids_path = '/Volumes/xyu/ds006169'
+
+# ============================
+
+# AFQ Group Analysis
+
+# ============================
+
+my_afq = GroupAFQ(
+
+    bids_path,
+
+    #preproc_pipeline='mrtrix',
+
+    import_tract={
+
+        "suffix": "tractography",
+
+        "scope": "my_tractography"
+
+    },
+    #bids_filters={
+
+    #    "suffix": "dwi",
+
+    #}
+)
+
+# ============================
+
+# 运行 + 导出
+
+# ============================
+
+my_afq.export_all()
