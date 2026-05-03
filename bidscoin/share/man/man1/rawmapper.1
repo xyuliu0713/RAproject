@@ -1,0 +1,68 @@
+.TH RAWMAPPER "1" "2025\-06\-19" "bidscoin 4.6.2" "Generated Python Manual"
+.SH NAME
+rawmapper
+.SH SYNOPSIS
+.B rawmapper
+[-h] [-s SESSION [SESSION ...]] [-f NAME [NAME ...]] [-w PATTERN] [-o FOLDER] [-r] [-c] [-n PREFIX] [-m [PREFIX]] [-d] FOLDER
+.SH DESCRIPTION
+Maps out the values of a DICOM attribute of all subjects in the sourcefolder, saves the result
+in a mapper\-file and, optionally, uses the DICOM values to rename the sub\-/ses\-id's of the
+subfolders. This latter option can be used, e.g. when an alternative subject id was entered in
+the [Additional info] field during subject registration at the scanner console (i.e. this data
+is stored in the DICOM attribute named 'PatientComments')
+
+.TP
+\fBFOLDER\fR
+The source folder with the raw data in sub\-#/ses\-#/series organization
+
+.SH OPTIONS
+.TP
+\fB\-s\fR \fI\,SESSION [SESSION ...]\/\fR, \fB\-\-sessions\fR \fI\,SESSION [SESSION ...]\/\fR
+Space separated list of selected sub\-#/ses\-# names/folders to be processed. Otherwise all sessions in the bidsfolder will be processed
+
+.TP
+\fB\-f\fR \fI\,NAME [NAME ...]\/\fR, \fB\-\-field\fR \fI\,NAME [NAME ...]\/\fR
+The fieldname(s) of the DICOM attribute(s) used to rename or map the subid/sesid foldernames
+
+.TP
+\fB\-w\fR \fI\,PATTERN\/\fR, \fB\-\-wildcard\fR \fI\,PATTERN\/\fR
+The Unix style pathname pattern expansion that is used to select the series folders from which the dicomfield is being mapped (can contain wildcards)
+
+.TP
+\fB\-o\fR \fI\,FOLDER\/\fR, \fB\-\-outfolder\fR \fI\,FOLDER\/\fR
+The mapper\-file is normally saved in sourcefolder or, when using this option, in outfolder
+
+.TP
+\fB\-r\fR, \fB\-\-rename\fR
+Rename sub\-subid/ses\-sesid directories in the sourcefolder to sub\-dcmval/ses\-dcmval
+
+.TP
+\fB\-c\fR, \fB\-\-clobber\fR
+Rename the sub/ses directories, even if the target\-directory already exists
+
+.TP
+\fB\-n\fR \fI\,PREFIX\/\fR, \fB\-\-subprefix\fR \fI\,PREFIX\/\fR
+The prefix common for all the source subject\-folders. Use a '*' wildcard if there is no prefix
+
+.TP
+\fB\-m\fR \fI\,[PREFIX]\/\fR, \fB\-\-sesprefix\fR \fI\,[PREFIX]\/\fR
+The prefix common for all the source session\-folders. Use a '*' wildcard if there is no prefix or an empty value if there are no sessions
+
+.TP
+\fB\-d\fR, \fB\-\-dryrun\fR
+Dryrun (test) the mapping or renaming of the sub\-subid/ses\-sesid directories (i.e. nothing is stored on disk and directory names are not actually changed))
+
+.SH COMMENTS
+examples:
+  rawmapper myproject/raw
+  rawmapper myproject/raw \-f AcquisitionDate
+  rawmapper myproject/raw \-s sub\-100/ses\-mri01 sub\-126/ses\-mri01
+  rawmapper myproject/raw \-r \-f ManufacturerModelName AcquisitionDate \-\-dryrun
+  rawmapper myproject/raw \-r \-s sub\-1*/* sub\-2*/ses\-mri01 \-\-dryrun
+  rawmapper \-f EchoTime \-w *fMRI* myproject/raw
+ 
+
+.SH AUTHOR
+.nf
+Marcel Zwiers <m.zwiers@donders.ru.nl>
+.fi

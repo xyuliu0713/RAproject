@@ -1,0 +1,5 @@
+[console_scripts]
+bst = bidsschematools.__main__:cli
+
+[gui_scripts]
+

@@ -1,0 +1,60 @@
+.TH SKULLSTRIP "1" "2025\-06\-19" "bidscoin 4.6.2" "Generated Python Manual"
+.SH NAME
+skullstrip
+.SH SYNOPSIS
+.B skullstrip
+[-h] [-p LABEL [LABEL ...]] [-m PATTERN] [-o DESTINATION [DESTINATION ...]] [-f] [-a ARGS] [-c [SPECS]] bidsfolder pattern
+.SH DESCRIPTION
+A wrapper around FreeSurfer's 'synthstrip' skull stripping tool
+(https://surfer.nmr.mgh.harvard.edu/docs/synthstrip). Except for BIDS inheritances,
+this wrapper is BIDS\-aware (a 'bidsapp') and writes BIDS compliant output
+
+The corresponding brain mask is saved in the bids/derivatives/synthstrip folder
+
+Assumes the installation of FreeSurfer v7.3.2 or higher
+
+.TP
+\fBbidsfolder\fR
+The bids\-directory with the subject data
+
+.TP
+\fBpattern\fR
+Globlike search pattern (relative to the subject/session folder) to select the (3D) images that need to be skullstripped, e.g. 'anat/*_T1w*'
+
+.SH OPTIONS
+.TP
+\fB\-p\fR \fI\,LABEL [LABEL ...]\/\fR, \fB\-\-participant\fR \fI\,LABEL [LABEL ...]\/\fR
+Space separated list of sub\-# identifiers to be processed (the sub\-prefix can be left out). If not specified then all participants will be processed
+
+.TP
+\fB\-m\fR \fI\,PATTERN\/\fR, \fB\-\-masked\fR \fI\,PATTERN\/\fR
+Globlike search pattern (relative to the subject/session folder) to select additional (3D/4D) images from the same space that need to be masked with the same mask, e.g. 'fmap/*_phasediff'. NB: This option can only be used if pattern yields a single file per session
+
+.TP
+\fB\-o\fR \fI\,DESTINATION [DESTINATION ...]\/\fR, \fB\-\-output\fR \fI\,DESTINATION [DESTINATION ...]\/\fR
+One or two output strings that determine where the skullstripped + additional masked images are saved. Each output string can be the name of a BIDS datatype folder, such as 'anat', or of the derivatives folder, i.e. 'derivatives' (default). If the output string is the same as the datatype then the original images are replaced by the skullstripped images
+
+.TP
+\fB\-f\fR, \fB\-\-force\fR
+Process images, regardless whether images have already been skullstripped (i.e. if {'SkullStripped': True} in the json sidecar file)
+
+.TP
+\fB\-a\fR \fI\,ARGS\/\fR, \fB\-\-args\fR \fI\,ARGS\/\fR
+Additional arguments that are passed to synthstrip (NB: Use quotes and include at least one space character to prevent premature parsing)
+
+.TP
+\fB\-c\fR \fI\,[SPECS]\/\fR, \fB\-\-cluster\fR \fI\,[SPECS]\/\fR
+Use the DRMAA library to submit the skullstrip jobs to a high\-performance compute (HPC) cluster. You can add an opaque DRMAA argument with native specifications for your HPC resource manager (NB: Use quotes and include at least one space character to prevent premature parsing \-\- see examples)
+
+.SH COMMENTS
+examples:
+  skullstrip myproject/bids anat/*_T1w*
+  skullstrip myproject/bids anat/*_T1w* \-p 001 003 \-a " \-\-no\-csf"
+  skullstrip myproject/bids fmap/*_magnitude1* \-m fmap/*_phasediff* \-o extra_data fmap
+  skullstrip myproject/bids fmap/*_acq\-mylabel*_magnitude1* \-m fmap/*_acq\-mylabel_* \-o fmap
+ 
+
+.SH AUTHOR
+.nf
+Marcel Zwiers <m.zwiers@donders.ru.nl>
+.fi

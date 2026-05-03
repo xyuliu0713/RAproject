@@ -1,0 +1,55 @@
+.TH ECHOCOMBINE "1" "2025\-06\-19" "bidscoin 4.6.2" "Generated Python Manual"
+.SH NAME
+echocombine
+.SH SYNOPSIS
+.B echocombine
+[-h] [-p LABEL [LABEL ...]] [-o DESTINATION] [-a {PAID,TE,average}] [-w [WEIGHT ...]] [-f] bidsfolder pattern
+.SH DESCRIPTION
+A wrapper around the 'mecombine' multi\-echo combination tool
+(https://github.com/Donders\-Institute/multiecho).
+
+Except for BIDS inheritances, this wrapper is BIDS\-aware (a 'bidsapp') and writes BIDS
+compliant output
+
+.TP
+\fBbidsfolder\fR
+The bids\-directory with the (multi\-echo) subject data
+
+.TP
+\fBpattern\fR
+Globlike recursive search pattern (relative to the subject/session folder) to select the first echo of the images that need to be combined, e.g. '*task\-*echo\-1*'
+
+.SH OPTIONS
+.TP
+\fB\-p\fR \fI\,LABEL [LABEL ...]\/\fR, \fB\-\-participant\fR \fI\,LABEL [LABEL ...]\/\fR
+Space separated list of sub\-# identifiers to be processed (the sub\-prefix can be left out). If not specified then all participants will be processed
+
+.TP
+\fB\-o\fR \fI\,DESTINATION\/\fR, \fB\-\-output\fR \fI\,DESTINATION\/\fR
+A string that determines where the output is saved. It can be the name of a BIDS datatype folder, such as 'func', or of the derivatives folder, i.e. 'derivatives'. If output is left empty then the combined image is saved in the input datatype folder and the original echo images are moved to the 'extra_data' folder
+
+.TP
+\fB\-a\fR \fI\,{PAID,TE,average}\/\fR, \fB\-\-algorithm\fR \fI\,{PAID,TE,average}\/\fR
+Combination algorithm
+
+.TP
+\fB\-w\fR \fI\,[WEIGHT ...]\/\fR, \fB\-\-weights\fR \fI\,[WEIGHT ...]\/\fR
+Weights for each echo
+
+.TP
+\fB\-f\fR, \fB\-\-force\fR
+Process all images, regardless whether target images already exist. Otherwise the echo\-combination will be skipped
+
+.SH COMMENTS
+examples:
+  echocombine myproject/bids func/*task\-stroop*echo\-1*
+  echocombine myproject/bids *task\-stroop*echo\-1* \-p 001 003
+  echocombine myproject/bids func/*task\-*echo\-1* \-o func
+  echocombine myproject/bids func/*task\-*echo\-1* \-o derivatives \-w 13 26 39 52
+  echocombine myproject/bids func/*task\-*echo\-1* \-a PAID
+ 
+
+.SH AUTHOR
+.nf
+Marcel Zwiers <m.zwiers@donders.ru.nl>
+.fi

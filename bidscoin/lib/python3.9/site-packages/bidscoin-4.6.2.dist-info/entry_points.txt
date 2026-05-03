@@ -1,0 +1,16 @@
+[console_scripts]
+bidscoin = bidscoin.bcoin:main
+bidscoiner = bidscoin.bidscoiner:main
+bidseditor = bidscoin.bidseditor:main
+bidsmapper = bidscoin.bidsmapper:main
+bidsparticipants = bidscoin.utilities.bidsparticipants:main
+deface = bidscoin.bidsapps.deface:main
+dicomsort = bidscoin.utilities.dicomsort:main
+echocombine = bidscoin.bidsapps.echocombine:main
+fixmeta = bidscoin.bidsapps.fixmeta:main
+medeface = bidscoin.bidsapps.medeface:main
+physio2tsv = bidscoin.utilities.physio2tsv:main
+plotphysio = bidscoin.utilities.plotphysio:main
+rawmapper = bidscoin.utilities.rawmapper:main
+skullstrip = bidscoin.bidsapps.skullstrip:main
+slicereport = bidscoin.bidsapps.slicereport:main

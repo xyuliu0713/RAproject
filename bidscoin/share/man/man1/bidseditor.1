@@ -1,0 +1,37 @@
+.TH BIDSEDITOR "1" "2025\-06\-19" "bidscoin 4.6.2" "Generated Python Manual"
+.SH NAME
+bidseditor
+.SH SYNOPSIS
+.B bidseditor
+[-h] [-b NAME] [-t NAME] bidsfolder
+.SH DESCRIPTION
+This application launches a graphical user interface for editing the bidsmap that is produced
+by the bidsmapper. You can edit the BIDS data types and entities until all run\-items have a
+meaningful and nicely readable BIDS output name. The (saved) bidsmap.yaml output file will be
+used by the bidscoiner to do the conversion of the source data to BIDS.
+
+You can hoover with your mouse over items to get help text (pop\-up tooltips).
+
+.TP
+\fBbidsfolder\fR
+The destination folder with the (future) bids data
+
+.SH OPTIONS
+.TP
+\fB\-b\fR \fI\,NAME\/\fR, \fB\-\-bidsmap\fR \fI\,NAME\/\fR
+The study bidsmap file with the mapping heuristics. If the bidsmap filename is just the base name (i.e. no "/" in the name) then it is assumed to be located in the current directory or in bidsfolder/code/bidscoin. Default: bidsmap.yaml
+
+.TP
+\fB\-t\fR \fI\,NAME\/\fR, \fB\-\-template\fR \fI\,NAME\/\fR
+The template bidsmap file with the default heuristics (this could be provided by your institute). If the bidsmap filename is just the base name (i.e. no "/" in the name) then it is assumed to be located in the bidscoin config folder. Default: bidsmap_dccn
+
+.SH COMMENTS
+examples:
+  bidseditor myproject/bids
+  bidseditor myproject/bids \-t bidsmap_dccn.yaml
+  bidseditor myproject/bids \-b my/custom/bidsmap.yaml
+
+.SH AUTHOR
+.nf
+Marcel Zwiers <m.zwiers@donders.ru.nl>
+.fi

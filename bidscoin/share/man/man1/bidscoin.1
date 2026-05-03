@@ -1,0 +1,90 @@
+.TH BIDSCOIN "1" "2025\-06\-19" "bidscoin 4.6.2" "Generated Python Manual"
+.SH NAME
+bidscoin
+.SH SYNOPSIS
+.B bidscoin
+[-h] [-l] [-p] [-i NAME [NAME ...]] [-u NAME [NAME ...]] [-d FOLDER] [-t [TEMPLATE]] [-b BIDSMAP] [-c OPTIONS [OPTIONS ...]] [-r] [--tracking {yes,no,show}] [-v]
+.SH DESCRIPTION
+  ,\-\-\-\-\-.  ,\-\-.,\-\-\-\-\-\-.   ,\-\-\-.               ,\-\-.
+  |  |) /_ |  ||  .\-.  \\ '   .\-'  ,\-\-\-. ,\-\-\-. `\-\-',\-\-,\-\-,
+  |  .\-.  \\|  ||  |  \\  :`.  `\-. | .\-\-'| .\-. |,\-\-.|      \\
+  |  '\-\-' /|  ||  '\-\-'  /.\-'    |\\ `\-\-.' '\-' '|  ||  ||  |
+  `\-\-\-\-\-\-' `\-\-'`\-\-\-\-\-\-\-' `\-\-\-\-\-'  `\-\-\-' `\-\-\-' `\-\-'`\-\-''\-\-'
+
+BIDScoin is a toolkit to convert raw data\-sets according to the Brain Imaging Data Structure (BIDS)
+
+The basic workflow is to run these two tools:
+
+  $ bidsmapper sourcefolder bidsfolder     # This produces a study bidsmap and launches a GUI
+  $ bidscoiner sourcefolder bidsfolder     # This converts your data to BIDS according to the study bidsmap
+
+Default settings, plugins and template bidsmaps are stored in the `.bidscoin` configuration folder in your
+home directory (you can modify the configuration files to your needs with any plain text editor)
+
+Set the environment variable `BIDSCOIN_DEBUG=TRUE` to run BIDScoin in a more verbose logging mode and
+`BIDSCOIN_CONFIGDIR=/writable/path/to/configdir` for using a different configuration (root) directory.
+Citation reports can be generated with the help of duecredit (https://github.com/duecredit/duecredit)
+
+For more documentation see: https://bidscoin.readthedocs.io
+
+.SH OPTIONS
+.TP
+\fB\-l\fR, \fB\-\-list\fR
+List all executables (i.e. the apps, bidsapps and utilities)
+
+.TP
+\fB\-p\fR, \fB\-\-plugins\fR
+List all installed plugins and template bidsmaps
+
+.TP
+\fB\-i\fR \fI\,NAME [NAME ...]\/\fR, \fB\-\-install\fR \fI\,NAME [NAME ...]\/\fR
+A list of template bidsmaps and/or bidscoin plugins to install
+
+.TP
+\fB\-u\fR \fI\,NAME [NAME ...]\/\fR, \fB\-\-uninstall\fR \fI\,NAME [NAME ...]\/\fR
+A list of template bidsmaps and/or bidscoin plugins to uninstall
+
+.TP
+\fB\-d\fR \fI\,FOLDER\/\fR, \fB\-\-download\fR \fI\,FOLDER\/\fR
+Download tutorial MRI data to the DOWNLOAD folder
+
+.TP
+\fB\-t\fR \fI\,[TEMPLATE]\/\fR, \fB\-\-test\fR \fI\,[TEMPLATE]\/\fR
+Test the bidscoin installation and template bidsmap
+
+.TP
+\fB\-b\fR \fI\,BIDSMAP\/\fR, \fB\-\-bidsmaptest\fR \fI\,BIDSMAP\/\fR
+Test the run\-items and their bidsnames of all normal runs in the study bidsmap. Provide the bids\-folder or the bidsmap filepath
+
+.TP
+\fB\-c\fR \fI\,OPTIONS [OPTIONS ...]\/\fR, \fB\-\-credits\fR \fI\,OPTIONS [OPTIONS ...]\/\fR
+Show duecredit citations for your BIDS repository. You can also add duecredit summary arguments (without dashes), e.g. `style {apa,harvard1}` or `format {text,bibtex}`.
+
+.TP
+\fB\-r\fR, \fB\-\-reset\fR
+Restore the settings, plugins and template bidsmaps in your home directory to their default values
+
+.TP
+\fB\-\-tracking\fR \fI\,{yes,no,show}\/\fR
+Show the usage tracking info {show}, or set usage tracking to {yes} or {no}
+
+.TP
+\fB\-v\fR, \fB\-\-version\fR
+Show the installed version and check for updates
+
+.SH COMMENTS
+examples:
+  bidscoin \-l
+  bidscoin \-d data/bidscoin
+  bidscoin \-t
+  bidscoin \-t my_template_bidsmap
+  bidscoin \-b my_study_bidsmap
+  bidscoin \-i data/my_template_bidsmap.yaml downloads/my_plugin.py
+  bidscoin \-c myproject/bids format bibtex
+  bidscoin \-\-tracking show
+ 
+
+.SH AUTHOR
+.nf
+Marcel Zwiers <m.zwiers@donders.ru.nl>
+.fi
