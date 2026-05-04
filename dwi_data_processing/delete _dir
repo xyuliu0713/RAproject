@@ -1,0 +1,61 @@
+# 批量把文件名里的 dir-AP 去掉
+
+import os
+
+import glob
+
+bids_root = "/Volumes/xyu/ds006169"
+
+# 遍历所有 sub 和 ses
+
+for sub in os.listdir(bids_root):
+
+    if not sub.startswith("sub-"):
+
+        continue
+
+    sub_path = os.path.join(bids_root, sub)
+
+    for ses in os.listdir(sub_path):
+
+        if not ses.startswith("ses-"):
+
+            continue
+
+        dwi_path = os.path.join(sub_path, ses, "dwi")
+
+        if not os.path.exists(dwi_path):
+
+            continue
+
+        # 找所有包含 dir-AP 的文件
+
+        files = glob.glob(os.path.join(dwi_path, "*dir-AP*"))
+
+        for f in files:
+
+            dirname = os.path.dirname(f)
+
+            basename = os.path.basename(f)
+
+            # 去掉 dir-AP
+
+            new_name = basename.replace("_dir-AP", "")
+
+            old_file = f
+
+            new_file = os.path.join(dirname, new_name)
+
+            # 防止覆盖
+
+            if os.path.exists(new_file):
+
+                print(f"⚠️ 已存在，跳过: {new_file}")
+
+                continue
+
+            print(f"重命名: {old_file} -> {new_file}")
+
+            os.rename(old_file, new_file)
+
+print("✅ 完成")

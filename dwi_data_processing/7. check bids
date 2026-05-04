@@ -1,0 +1,17 @@
+from bids import BIDSLayout
+import bids
+
+layout = BIDSLayout("/Volumes/xyu/files/ds006169-2")
+
+print(layout.get(suffix='dwi', scope='mrtrix'))
+
+
+# or in bash using: 
+# npx bids-validator /Volumes/xyu/ds006169
+
+# this will give you error in red line such as:
+# 	1: [ERR] The number of volumes in this scan does not match the number of volumes in the corresponding .bvec and .bval files. (code: 29 - VOLUME_COUNT_MISMATCH)
+#		./sub-80/ses-03/dwi/sub-80_ses-03_dir-AP_dwi.nii.gz
+
+#	2: [ERR] A json sidecar file was found without a corresponding data file (code: 90 - SIDECAR_WITHOUT_DATAFILE)
+#		./sub-01/ses-03/anat/sub-01_ses-03_T1w.json

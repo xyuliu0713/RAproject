@@ -1,0 +1,108 @@
+%% ===============================
+
+%  Extract tract-level FA & MD from AFQ
+
+%  Language-related white matter tracts
+
+% ================================
+
+clear; clc;
+
+%% 1. Load AFQ structure
+
+load('afq.mat');   % 如果你是 afq.mat 就改名字
+
+%% 2. Check variables
+
+if ~exist('afq','var')
+
+    error('AFQ structure not found. Check variable name.');
+
+end
+
+%% 3. Extract FA and MD
+
+fa = afq.vals.fa;
+
+md = afq.vals.md;
+
+%% 4. Check dimensions
+
+disp('Data size (tract x node x subject):');
+
+disp(size(fa));
+
+%% 5. Get tract names (important!)
+
+fgnames = afq.fgnames;
+
+disp('Available tracts:');
+
+disp(fgnames');
+
+%% 6. Automatically find indices
+
+idx_arcuate = find(contains(fgnames,'Arcuate'));
+
+idx_slf     = find(contains(fgnames,'SLF'));
+
+idx_ilf     = find(contains(fgnames,'ILF'));
+
+%% 7. Define nodes (remove noisy edges)
+
+% nodes = 6:95;   % 推荐用于论文
+
+%% 8. Function for tract-level mean
+
+tract_mean = @(x, idx) mean( ...
+    cellfun(@(t) mean(t(6:95),'omitnan'), x(idx)) ...
+    ,'omitnan');
+  
+%% 9. Compute FA and MD
+
+results = struct();
+
+% Arcuate Fasciculus
+
+results.Arcuate.FA = tract_mean(fa, idx_arcuate);
+
+results.Arcuate.MD = tract_mean(md, idx_arcuate);
+
+% SLF
+
+results.SLF.FA = tract_mean(fa, idx_slf);
+
+results.SLF.MD = tract_mean(md, idx_slf);
+
+% ILF
+
+results.ILF.FA = tract_mean(fa, idx_ilf);
+
+results.ILF.MD = tract_mean(md, idx_ilf);
+
+%% 10. Display results
+
+disp('====== Tract-level results ======');
+
+disp(results);
+
+%% 11. (Optional) Save to file
+
+save('tract_FA_MD_results.mat','results');
+
+%% 12. (Optional) Convert to table (nice for stats / Excel)
+
+T = table( ...
+    results.Arcuate.FA, results.Arcuate.MD, ...
+    results.SLF.FA,     results.SLF.MD, ...
+    results.ILF.FA,     results.ILF.MD, ...
+    'VariableNames', { ...
+    'Arcuate_FA','Arcuate_MD', ...
+    'SLF_FA','SLF_MD', ...
+    'ILF_FA','ILF_MD'});
+
+disp('====== Table format ======');
+
+disp(T);
+
+writetable(T,'tract_FA_MD_results.csv');

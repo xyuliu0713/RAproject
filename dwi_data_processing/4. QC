@@ -1,0 +1,267 @@
+#!/bin/bash
+
+BASE_DIR="/Volumes/xyu/files/ds006169-2"
+
+OUT_CSV="qc_summary_full.csv"
+
+OUT_STATS="qc_stats_full.txt"
+
+echo "sub,ses,NO_DWI,NO_PA,NO_B0_PAIR,B0_NOT_4D,NO_PREPROC,NO_MASK,NO_FOD,NO_5TT,NO_TRACKS" > $OUT_CSV
+
+# counters
+
+total=0
+
+bad=0
+
+no_dwi=0
+
+no_pa=0
+
+no_b0=0
+
+b0_bad=0
+
+no_preproc=0
+
+no_mask=0
+
+no_fod=0
+
+no_5tt=0
+
+no_tracks=0
+
+for sub_dir in "${BASE_DIR}"/sub-*; do
+
+    sub=$(basename "${sub_dir}")
+
+    for ses_dir in "${sub_dir}"/ses-*; do
+
+        ses=$(basename "${ses_dir}")
+
+        echo "Processing ${sub} ${ses}"
+
+        total=$((total+1))
+
+        dwi_dir="${ses_dir}/dwi"
+
+        fmap_dir="${ses_dir}/fmap"
+
+        # flags
+
+        flag_no_dwi=0
+
+        flag_no_pa=0
+
+        flag_no_b0=0
+
+        flag_b0_bad=0
+
+        flag_no_preproc=0
+
+        flag_no_mask=0
+
+        flag_no_fod=0
+
+        flag_no_5tt=0
+
+        flag_no_tracks=0
+
+        # ========================
+
+        # 1. DWI
+
+        # ========================
+
+        if [ -d "$dwi_dir" ]; then
+
+            dwi=$(ls "$dwi_dir"/*_dir-AP_dwi.nii.gz 2>/dev/null)
+
+            [ -z "$dwi" ] && flag_no_dwi=1
+
+        else
+
+            flag_no_dwi=1
+
+        fi
+
+        [ $flag_no_dwi -eq 1 ] && no_dwi=$((no_dwi+1))
+
+        # ========================
+
+        # 2. PA
+
+        # ========================
+
+        pa=$(ls "$fmap_dir"/*_dir-PA_epi.nii.gz 2>/dev/null)
+
+        [ -z "$pa" ] && flag_no_pa=1
+
+        [ $flag_no_pa -eq 1 ] && no_pa=$((no_pa+1))
+
+        # ========================
+
+        # 3. b0_pair + 4D check（修复版）
+
+        # ========================
+
+        if [ -f "$dwi_dir/b0_pair.mif" ]; then
+
+            dims=$(mrinfo "$dwi_dir/b0_pair.mif" 2>/dev/null | grep Dimensions)
+
+            # 取第4维（最后一个数）
+
+            vols=$(echo "$dims" | awk '{print $NF}')
+
+            if [ -z "$vols" ]; then
+
+                flag_b0_bad=1
+
+            elif [ "$vols" -lt 2 ]; then
+
+                flag_b0_bad=1
+
+            fi
+
+        else
+
+            flag_no_b0=1
+
+        fi
+
+        [ $flag_no_b0 -eq 1 ] && no_b0=$((no_b0+1))
+
+        [ $flag_b0_bad -eq 1 ] && b0_bad=$((b0_bad+1))
+
+        # ========================
+
+        # 4. Preproc
+
+        # ========================
+
+        [ ! -f "$dwi_dir/dwi_preproc.mif" ] && flag_no_preproc=1
+
+        [ $flag_no_preproc -eq 1 ] && no_preproc=$((no_preproc+1))
+
+        # ========================
+
+        # 5. Mask
+
+        # ========================
+
+        [ ! -f "$dwi_dir/mask.mif" ] && flag_no_mask=1
+
+        [ $flag_no_mask -eq 1 ] && no_mask=$((no_mask+1))
+
+        # ========================
+
+        # 6. FOD
+
+        # ========================
+
+        [ ! -f "$dwi_dir/wmfod_norm.mif" ] && flag_no_fod=1
+
+        [ $flag_no_fod -eq 1 ] && no_fod=$((no_fod+1))
+
+        # ========================
+
+        # 7. 5TT
+
+        # ========================
+
+        [ ! -f "$dwi_dir/5tt.mif" ] && flag_no_5tt=1
+
+        [ $flag_no_5tt -eq 1 ] && no_5tt=$((no_5tt+1))
+
+        # ========================
+
+        # 8. Tracks（新增）
+
+        # ========================
+
+        if [ ! -f "$dwi_dir/tracks_2M.tck" ]; then
+
+            flag_no_tracks=1
+
+            no_tracks=$((no_tracks+1))
+
+        fi
+
+        # ========================
+
+        # bad session
+
+        # ========================
+
+        if [ $flag_no_dwi -eq 1 ] || \
+
+           [ $flag_no_pa -eq 1 ] || \
+
+           [ $flag_no_b0 -eq 1 ] || \
+
+           [ $flag_b0_bad -eq 1 ] || \
+
+           [ $flag_no_preproc -eq 1 ] || \
+
+           [ $flag_no_mask -eq 1 ] || \
+
+           [ $flag_no_fod -eq 1 ] || \
+
+           [ $flag_no_5tt -eq 1 ] || \
+
+           [ $flag_no_tracks -eq 1 ]; then
+
+            bad=$((bad+1))
+
+        fi
+
+        # ========================
+
+        # 写入 CSV
+
+        # ========================
+
+        echo "${sub},${ses},${flag_no_dwi},${flag_no_pa},${flag_no_b0},${flag_b0_bad},${flag_no_preproc},${flag_no_mask},${flag_no_fod},${flag_no_5tt},${flag_no_tracks}" >> $OUT_CSV
+
+    done
+
+done
+
+# ========================
+
+# summary
+
+# ========================
+
+echo "===== QC SUMMARY =====" > $OUT_STATS
+
+echo "Total sessions: $total" >> $OUT_STATS
+
+echo "Bad sessions: $bad" >> $OUT_STATS
+
+echo "" >> $OUT_STATS
+
+echo "NO_DWI: $no_dwi" >> $OUT_STATS
+
+echo "NO_PA: $no_pa" >> $OUT_STATS
+
+echo "NO_B0_PAIR: $no_b0" >> $OUT_STATS
+
+echo "B0_NOT_4D: $b0_bad" >> $OUT_STATS
+
+echo "NO_PREPROC: $no_preproc" >> $OUT_STATS
+
+echo "NO_MASK: $no_mask" >> $OUT_STATS
+
+echo "NO_FOD: $no_fod" >> $OUT_STATS
+
+echo "NO_5TT: $no_5tt" >> $OUT_STATS
+
+echo "NO_TRACKS: $no_tracks" >> $OUT_STATS
+
+echo "✅ QC DONE"
+
+echo "CSV: $OUT_CSV"
+
+echo "STATS: $OUT_STATS"
