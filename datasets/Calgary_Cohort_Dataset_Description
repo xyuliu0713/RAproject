@@ -1,0 +1,84 @@
+# Calgary Cohort Dataset
+
+This repository contains Calgary cohort dataset used in the following study:
+
+Turesky TK, Escalante ES, Loh M, Gaab N.  
+*Longitudinal trajectories of brain development from infancy to school age and their relationship to literacy development*  
+https://doi.org/10.1101/2024.06.29.601366
+
+For corresponding code, please see:  
+https://github.com/TeddyTuresky/Longitudinal-Trajectories-Early-Brain-Development-Language/tree/main
+
+For the dataset information please see:  
+https://osf.io/axz5r/
+
+---
+
+- No QC information
+- **126 subjects, 431 scans in total**
+
+---
+
+# Data Dictionary for Measures
+
+| Variable | Description |
+|---|---|
+| `PreschoolID` | Participant ID |
+| `ScanID` | Scan ID |
+| `Age (Years)` | Age in years |
+| `Biological Sex (Female = 0; Male = 1)` | Biological sex |
+| `Handedness` | Handedness |
+| `Maternal Postsecondary Years of Education` | Maternal postsecondary years of education |
+| `Phonological Processing Standard Score` | Phonological processing subtest of the NEPSY-II, which measures phonemic awareness |
+| `Phonological Processing Raw Score` | Raw phonological processing score |
+| `Speeded Naming Standard Score` | Standardized speeded naming score |
+| `Speeded Naming Completion Time` | Completion time for speeded naming |
+| `Speeded Naming Number Correct` | Number correct for speeded naming |
+
+---
+
+# MRI Data Information
+
+All data were acquired on a 3.0 T General Electric scanner with a 32-channel head coil.
+
+---
+
+## Structural Data
+
+**39 scans used in the article**  
+Voxel size = `0.45 × 0.45 × 0.9 mm^3`
+
+Structural T1-weighted scans were acquired with the following parameters:
+
+- TR = 8.23 ms
+- TE = 3.76 ms
+- Field of view = 230 mm
+- Voxel size = `0.45 × 0.45 × 0.9 mm^3`
+- 210 slices
+
+---
+
+## Diffusion Data
+
+**51 scans used in the article**
+
+- Voxel size = `0.78 × 0.78 × 2.2 mm^3`
+- 50–55 slices
+- 30 b = 750 s/mm² gradient directions
+- 5 b = 0 s/mm² non-diffusion-weighted volumes
+
+Diffusion echo planar images were acquired using the following parameters:
+
+- TR = 6750 ms
+- TE = 79 ms
+- Flip angle = 90°
+- Field of view = 200 mm
+- Voxel size = `0.78 × 0.78 × 2.2 mm^3`
+- 50–55 slices
+- 30 b = 750 s/mm² gradient directions
+- 5 b = 0 s/mm² non-diffusion-weighted volumes
+
+Diffusion acquisition:
+
+- Did not use a slice-acceleration factor
+- Did not include a reverse phase encoding (posterior-to-anterior) volume
