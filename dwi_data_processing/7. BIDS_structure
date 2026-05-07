@@ -1,0 +1,58 @@
+#!/bin/bash
+# generate files in /Volumes/xyu/ds006169/derivatives/mrtrix to satisfy BIDS structure
+
+SRC="/Volumes/xyu/files/ds006169-2"
+
+DEST="/Volumes/xyu/ds006169/derivatives/mrtrix"
+
+for sub_dir in "$SRC"/sub-*; do
+
+    sub=$(basename "$sub_dir")
+
+    for ses_dir in "$sub_dir"/ses-*; do
+
+        ses=$(basename "$ses_dir")
+
+        dwi_dir="$ses_dir/dwi"
+
+        nii="$dwi_dir/dwi_preproc_unbiased.nii.gz"
+
+        bval="$dwi_dir/dwi_preproc.bval"
+
+        bvec="$dwi_dir/dwi_preproc.bvec"
+        
+        mask="$dwi_dir/mask.nii.gz"
+        
+        b0_pair="$dwi_dir/b0_pair.nii.gz"
+
+        if [[ -f "$nii" && -f "$bval" && -f "$bvec" ]]; then
+
+            echo "Processing $sub $ses"
+
+            out_dir="$DEST/$sub/$ses/dwi"
+
+            # ✅ 确保目录创建成功
+
+            mkdir -p "$out_dir"
+
+            # ✅ 加引号（关键！）
+
+            cp "$nii"  "$out_dir/${sub}_${ses}_desc-preproc_dwi.nii.gz"
+
+            cp "$bval" "$out_dir/${sub}_${ses}_desc-preproc_dwi.bval"
+
+            cp "$bvec" "$out_dir/${sub}_${ses}_desc-preproc_dwi.bvec"
+            
+            cp "$mask" "$out_dir/${sub}_${ses}_desc-b0_dwi.nii.gz"
+            
+            cp "$b0_pair" "$out_dir/${sub}_${ses}_desc-b0_dwi.nii.gz"
+
+        else
+
+            echo "Skipping $sub $ses (missing files)"
+
+        fi
+
+    done
+
+done

@@ -1,0 +1,72 @@
+import pandas as pd
+import numpy as np
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+
+# ========= 1. 读取数据 =========
+df = pd.read_csv("/Volumes/xyu/files/ds006169-2/structural_features/reorg/lh_thickness.csv")
+
+# ========= 2. quadratic =========
+df = df[df["age"] > 0]
+df["age2"] = df["age"] ** 2
+
+# ========= 3. ROI =========
+rois = [
+    "bankssts","fusiform","inferiorparietal","middletemporal",
+    "parsopercularis","parstriangularis","superiortemporal","supramarginal"
+]
+
+# ========= 4. 统一 age grid =========
+age_range = np.linspace(df["age"].min(), df["age"].max(), 100)
+
+# ========= 5. 存所有 ROI 的 % change =========
+all_roi_percent = []
+
+for roi in rois:
+
+    print(f"Processing {roi}")
+
+    # ===== quadratic mixed model =====
+    model = smf.mixedlm(
+        f"{roi} ~ age + age2",
+        df,
+        groups=df["subject"],
+        re_formula="~age"
+    )
+
+    result = model.fit(method="lbfgs")
+
+    # ===== prediction =====
+    pred_df = pd.DataFrame({
+        "age": age_range,
+        "age2": age_range ** 2
+    })
+
+    y_pred = result.predict(pred_df)
+
+    # ===== 转成 % change =====
+    baseline = y_pred.iloc[0]   # 最小年龄
+    #baseline = np.mean(y_pred[:5])
+    percent_change = (y_pred - baseline) / baseline * 100
+
+    all_roi_percent.append(percent_change.values)
+
+# ========= 6. 平均 =========
+all_roi_percent = np.array(all_roi_percent)
+
+mean_percent = np.mean(all_roi_percent, axis=0)
+std_percent = np.std(all_roi_percent, axis=0)
+
+# ========= 7. 画一条线 =========
+plt.figure(figsize=(6, 5))
+
+plt.plot(age_range, mean_percent, linewidth=3, label="Mean % change")
+
+
+plt.xlabel("Age (Months)")
+plt.ylabel("% Change (from baseline)")
+plt.title("Average Cortical Thickness Development")
+
+plt.legend()
+plt.tight_layout()
+plt.show()

@@ -1,8 +1,8 @@
 #!/bin/bash 
 # in /Volumes/xyu/files/ds006169-2/script/test.sh
 
-BASE_DIR="/Volumes/xyu/files/ds006169-2"
-FS_BASE="/Volumes/xyu/files/ds006169-2"
+BASE_DIR="/Volumes/xyu/ds006169-1"
+FS_BASE="/Volumes/xyu/ds006169-1"
 
 export TMPDIR="${BASE_DIR}/tmp"
 mkdir -p "$TMPDIR"
@@ -308,3 +308,5 @@ echo "🎉 SCRIPT 1 DONE"
         #    tcksift2 tracks_2M.tck wmfod_norm.mif \
         #        sift2_weights.txt -force
         #fi
+
+

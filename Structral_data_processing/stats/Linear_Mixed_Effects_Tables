@@ -1,0 +1,158 @@
+# Tables for Linear Mixed Effects Models 
+
+# =========================
+# 0. Packages
+# =========================
+library(lme4)
+library(lmerTest)
+library(dplyr)
+
+# =========================
+# 1. Load data
+# =========================
+file_path <- "/Volumes/xyu/files/ds006169-2/structural_features/reorg/lh_gmvolume.csv"
+
+df <- read.table(file_path, header = TRUE, sep = ",")
+
+# =========================
+# 2. Inspect data
+# =========================
+print(colnames(df))
+str(df)
+
+# =========================
+# 3. Define ROI columns
+# =========================
+roi_cols <- c(
+  "bankssts",
+  "fusiform",
+  "inferiorparietal",
+  "middletemporal",
+  "parsopercularis",
+  "parstriangularis",
+  "superiortemporal",
+  "supramarginal"
+)
+
+# =========================
+# 4. Preprocess
+# =========================
+df$age_c <- scale(df$age, center = TRUE, scale = FALSE)
+
+# Ensure subject is factor
+df$subject <- as.factor(df$subject)
+
+# =========================
+
+# 4. Function
+
+# =========================
+
+run_models <- function(roi) {
+  
+  # ---------- Random Intercept ----------
+  
+  m_lin_ri <- lmer(as.formula(paste(roi, "~ age_c + (1 | subject)")), data=df, REML=FALSE)
+  
+  m_log_ri <- lmer(as.formula(paste(roi, "~ log(age) + (1 | subject)")), data=df, REML=FALSE)
+  
+  m_quad_ri <- lmer(as.formula(paste(roi, "~ age_c + I(age_c^2) + (1 | subject)")), data=df, REML=FALSE)
+  
+  bic_ri <- BIC(m_lin_ri, m_log_ri, m_quad_ri)
+  
+  best_ri <- rownames(bic_ri)[which.min(bic_ri$BIC)]
+  
+  best_ri <- gsub("m_", "", best_ri)
+  
+  # ---------- Random Intercept + Slope ----------
+  
+  m_lin_rs <- lmer(as.formula(paste(roi, "~ age_c + (1 + age_c | subject)")), data=df, REML=FALSE)
+  
+  m_log_rs <- lmer(as.formula(paste(roi, "~ log(age) + (1 + log(age) | subject)")), data=df, REML=FALSE)
+  
+  m_quad_rs <- lmer(as.formula(paste(roi, "~ age_c + I(age_c^2) + (1 + age_c | subject)")), data=df, REML=FALSE)
+  
+  bic_rs <- BIC(m_lin_rs, m_log_rs, m_quad_rs)
+  
+  best_rs <- rownames(bic_rs)[which.min(bic_rs$BIC)]
+  
+  best_rs <- gsub("m_", "", best_rs)
+  
+  return(data.frame(
+    
+    ROI = roi,
+    
+    # Random Intercept
+    
+    RI_linear = bic_ri$BIC[1],
+    
+    RI_logarithmic    = bic_ri$BIC[2],
+    
+    RI_quadratic   = bic_ri$BIC[3],
+    
+    Best_RI   = best_ri,
+    
+    # Random Slope
+    
+    RS_linear = bic_rs$BIC[1],
+    
+    RS_logarithmic    = bic_rs$BIC[2],
+    
+    RS_quadratic   = bic_rs$BIC[3],
+    
+    Best_RS   = best_rs
+    
+  ))
+  
+}
+
+# =========================
+
+# 5. Run
+
+# =========================
+
+results <- lapply(roi_cols, run_models)
+
+results_df <- bind_rows(results)
+
+print(results_df)
+
+# =========================
+# Add multi-level header
+# =========================
+
+results_clean <- results_df[, c(
+  "ROI",
+  "RI_linear", "RI_logarithmic", "RI_quadratic", "Best_RI",
+  "RS_linear", "RS_logarithmic", "RS_quadratic", "Best_RS"
+)]
+
+# 第一行
+header1 <- c(
+  "Brain Region",
+  "Random Intercept", "", "", "",
+  "Random Intercept and Slope", "", "", ""
+)
+
+# 第二行
+header2 <- c(
+  "Gray Matter Volume",
+  "linear", "logarithmic", "quadratic", "Best",
+  "linear", "logarithmic", "quadratic", "Best"
+)
+
+# 合并
+final_output <- rbind(header1, header2, as.matrix(results_clean))
+
+# =========================
+# Export（替换原来的 write.csv）
+# =========================
+write.table(
+  final_output,
+  "Linear_Mixed_Effects_Models_for_Gray_Matter_Volume.csv",
+  sep = ",",
+  row.names = FALSE,
+  col.names = FALSE,
+  quote = FALSE
+)

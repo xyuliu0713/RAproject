@@ -1,111 +1,85 @@
-#!/bin/bash
+import shutil
 
-BIDS_DIR=/Volumes/xyu/files/ds006169
+from pathlib import Path
 
-OUT_DIR=/path/to/output
+# ✅ FIXED SOURCE PATH (你刚刚指出的关键错误)
 
-PIPELINE=/path/to/your_script.sh
+src_root = Path("/Volumes/xyu/ds006169/derivatives/mrtrix2")
 
-mkdir -p ${OUT_DIR}/logs
+# 输出
 
-for sub in ${BIDS_DIR}/sub-*; do
+dst_root = Path("/Volumes/xyu/ds006169/derivatives/example_bids_subject")
 
-    subj=$(basename ${sub})
 
-    echo "============================"
 
-    echo "Subject: ${subj}"
+def copy_if_match(files, keywords):
 
-    echo "============================"
+    """返回第一个匹配 keywords 的文件"""
 
-    for ses in ${sub}/ses-*; do
+    for f in files:
 
-        [[ -d "$ses" ]] || continue
+        name = f.name.lower()
 
-        sess=$(basename ${ses})
+        if all(k in name for k in keywords):
 
-        echo "--- Session: ${sess}"
+            return f
 
-        # =========================
+    return None
 
-        # 1. FIND DWI
+def safe_copy(src, dst):
 
-        # =========================
+    if src and src.exists():
 
-        dwi=$(find ${ses}/dwi -name "*dwi*.nii.gz" 2>/dev/null | head -n 1)
+        dst.parent.mkdir(parents=True, exist_ok=True)
 
-        bvec=$(find ${ses}/dwi -name "*.bvec" 2>/dev/null | head -n 1)
+        shutil.copy2(src, dst)
 
-        bval=$(find ${ses}/dwi -name "*.bval" 2>/dev/null | head -n 1)
+        print(f"✔ copied: {src.name} → {dst}")
 
-        if [[ -z "$dwi" || -z "$bvec" || -z "$bval" ]]; then
+    else:
 
-            echo "Missing DWI in ${subj}/${sess}, skip"
+        print(f"✖ missing: {dst.name}")
 
-            continue
+for sub in src_root.glob("sub-*"):
 
-        fi
+    for ses in sub.glob("ses-*"):
 
-        # =========================
+        print(f"\n📁 Processing {sub.name} {ses.name}")
 
-        # 2. FIND ANAT
+        anat_dir = ses / "anat"
 
-        # =========================
+        dwi_dir = ses / "dwi"
 
-        anat=$(find ${ses}/anat -name "*T1w*.nii.gz" 2>/dev/null | head -n 1)
+        out_anat = dst_root / sub.name / ses.name / "anat"
 
-        if [[ -z "$anat" ]]; then
+        out_dwi = dst_root / sub.name / ses.name / "dwi"
 
-            echo "Missing T1 in ${subj}/${sess}, skip"
+        out_anat.mkdir(parents=True, exist_ok=True)
 
-            continue
+        out_dwi.mkdir(parents=True, exist_ok=True)
 
-        fi
+        anat_files = list(anat_dir.glob("*")) if anat_dir.exists() else []
 
-        # =========================
+        dwi_files = list(dwi_dir.glob("*")) if dwi_dir.exists() else []
 
-        # 3. FIND FMAP (reverse PE)
+        # ---------------- ANAT ----------------
 
-        # =========================
+        b0 = copy_if_match(dwi_files, ["b0"])
 
-        rev=$(find ${ses}/fmap -name "*dir-PA*nii.gz" 2>/dev/null | head -n 1)
+        safe_copy(b0, out_anat / "b0.nii.gz")
 
-        # =========================
+        t2 = copy_if_match(dwi_files, ["t2"])
 
-        # 4. OUTPUT DIR
+        safe_copy(t2, out_anat / "t2BiascorrAcpc.nii.gz")
 
-        # =========================
+        mask = copy_if_match(anat_files, ["mask"])
 
-        out=${OUT_DIR}/${subj}/${sess}
+        safe_copy(mask, out_anat / "t2BiasCorrAcpcResliced2dwi_mask.nii.gz")
 
-        mkdir -p ${out}
+        # ---------------- DWI ----------------
 
-        log=${OUT_DIR}/logs/${subj}_${sess}.log
+        tck = copy_if_match(dwi_files, ["tck"])
 
-        echo "Running pipeline..."
+        safe_copy(tck, out_dwi / "tractography.tck")
 
-        bash ${PIPELINE} \
-
-            -m ${dwi} \
-
-            -r ${rev} \
-
-            -t 1 \
-
-            -a ${anat} \
-
-            -o ${out} \
-
-            -x ${bvec} \
-
-            -l ${bval} \
-
-            -f msmt \
-
-            > ${log} 2>&1
-
-        echo "Done: ${subj} ${sess}"
-
-    done
-
-done
+print("\n✅ Done")

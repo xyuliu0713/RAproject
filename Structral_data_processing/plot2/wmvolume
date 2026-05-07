@@ -1,0 +1,74 @@
+# ROI-level LME → subject curves → 平均 → % change → ROI再平均 → 一条最终曲线
+
+import pandas as pd
+import numpy as np
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+
+# ========= 1. 读取数据 =========
+df = pd.read_csv("/Volumes/xyu/files/ds006169-2/structural_features/reorg/lh_wmvolume.csv")
+
+# ========= 2. log(age) =========
+df = df[df["age"] > 0]
+df["log_age"] = np.log(df["age"])
+
+# ========= 3. ROI =========
+rois = [
+    "bankssts","fusiform","inferiorparietal","middletemporal",
+    "parsopercularis","parstriangularis","superiortemporal","supramarginal"
+]
+
+# ========= 4. age grid =========
+age_range = np.linspace(df["age"].min(), df["age"].max(), 100)
+log_age_range = np.log(age_range)
+
+# ========= 5. 存所有 ROI 的 % change =========
+all_roi_percent = []
+
+for roi in rois:
+
+    print(f"Processing {roi}")
+
+    # ===== log LME =====
+    model = smf.mixedlm(
+        f"{roi} ~ log_age",
+        df,
+        groups=df["subject"],
+        re_formula="~log_age"
+    )
+
+    result = model.fit(method="lbfgs")
+
+    # ===== prediction（population-level）=====
+    pred_df = pd.DataFrame({
+        "age": age_range,
+        "log_age": log_age_range
+    })
+
+    y_pred = result.predict(pred_df)
+
+    # ===== 转 % change =====
+    #baseline = y_pred.iloc[0]
+    baseline = np.mean(y_pred[:5])
+    percent_change = (y_pred - baseline) / baseline * 100
+
+    all_roi_percent.append(percent_change.values)
+
+# ========= 6. ROI 平均 =========
+all_roi_percent = np.array(all_roi_percent)
+
+mean_percent = np.mean(all_roi_percent, axis=0)
+std_percent = np.std(all_roi_percent, axis=0)
+
+# ========= 7. 画一条线 =========
+plt.figure(figsize=(6, 5))
+
+plt.plot(age_range, mean_percent, linewidth=3, label="Mean % change (log model)")
+
+plt.xlabel("Age (Months)")
+plt.ylabel("% Change")
+plt.title("Average White Matter Volume Trajectory (Log Age)")
+
+plt.legend()
+plt.tight_layout()
+plt.show()

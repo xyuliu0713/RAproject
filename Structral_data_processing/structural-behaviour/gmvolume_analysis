@@ -1,0 +1,223 @@
+import pandas as pd
+import numpy as np
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+from statsmodels.stats.multitest import multipletests
+import seaborn as sns
+
+# ========= 1. 读取数据 =========
+df = pd.read_csv("/Volumes/xyu/files/ds006169-2/structural_features/add/lh_gmvolume_merged.csv")
+
+# ========= 2. log(1+age) =========
+df["log_age"] = np.log1p(df["age"])
+
+# ========= 3. 标准化 SES =========
+df["MEd"] = (df["MEd"] - df["MEd"].mean()) / df["MEd"].std()
+df["HLE"] = (df["HLE"] - df["HLE"].mean()) / df["HLE"].std()
+
+# ========= 4. ROI =========
+rois = ["bankssts", "caudalanteriorcingulate", "caudalmiddlefrontal", "cuneus",
+        "entorhinal", "fusiform", "inferiorparietal", "inferiortemporal",
+        "isthmuscingulate", "lateraloccipital", "lateralorbitofrontal", "lingual",
+        "medialorbitofrontal", "middletemporal", "parahippocampal", "paracentral",
+        "parsopercularis", "parsorbitalis", "parstriangularis", "pericalcarine",
+        "postcentral", "posteriorcingulate", "precentral", "precuneus",
+        "rostralanteriorcingulate", "rostralmiddlefrontal", "superiorfrontal",
+        "superiorparietal", "superiortemporal", "supramarginal", "frontalpole",
+        "temporalpole", "transversetemporal", "insula"]
+
+# ========= 5. 行为变量 =========
+behaviors = [
+    "kbit2_standard",
+    "pre_wjiv_orallang_standard",
+    "pre_wjiv_phonproc_standard",
+    "beg_wrmt3_wrd_id_stnd",
+    "beg_wrmt3_wrdatt_stnd",
+
+    "pre_books_kids_ord",
+    "pre_child_reading_time_ord",
+    "pre_fam_readership",
+    "pre_fam_write_notes",
+    "pre_fam_write_creative",
+
+    "beg_books_kids_ord",
+    "beg_child_reading_time_ord",
+    "beg_fam_readership",
+    "beg_fam_write_notes",
+    "beg_fam_write_creative",
+
+    "pre_child_alphabet",
+    "beg_child_alphabet",
+    "pre_child_count",
+    "beg_child_count"
+]
+
+# ========= 6. 清理数据 =========
+all_vars = ["subject", "age", "Sex", "MEd", "HLE", "FHD"] + rois + behaviors
+df = df.dropna(subset=all_vars).reset_index(drop=True)
+
+# ========= 7. 跑 LME =========
+results = []
+
+print("\n===== Running LME =====")
+
+for roi in rois:
+    for beh in behaviors:
+
+        formula = f"{roi} ~ {beh} + log_age + Sex + MEd + HLE + FHD"
+
+        try:
+            model = smf.mixedlm(formula, df, groups=df["subject"])
+            result = model.fit()
+
+            results.append({
+                "ROI": roi,
+                "Behavior": beh,
+                "beta": result.params.get(beh, np.nan),
+                "pval": result.pvalues.get(beh, np.nan)
+            })
+
+        except:
+            continue
+
+# ========= 8. 转 dataframe =========
+results_df = pd.DataFrame(results)
+
+# ========= 9. FDR correction =========
+valid_mask = results_df["pval"].notna()
+pvals = results_df.loc[valid_mask, "pval"].values
+
+_, pvals_fdr, _, _ = multipletests(pvals, method="fdr_bh")
+
+results_df["p_fdr"] = np.nan
+results_df.loc[valid_mask, "p_fdr"] = pvals_fdr
+
+# ========= 10. 转星号 =========
+def p_to_star(p):
+    if pd.isna(p):
+        return ""
+    elif p < 0.001:
+        return "***"
+    elif p < 0.01:
+        return "**"
+    elif p < 0.05:
+        return "*"
+    else:
+        return ""
+
+results_df["stars"] = results_df["p_fdr"].apply(p_to_star)
+
+# ========= 11. 输出 =========
+print("\n===== FINAL RESULTS =====")
+print(results_df.sort_values("p_fdr"))
+
+# ========= 12. Heatmap（只显示星号） =========
+beta_table = results_df.pivot(index="ROI", columns="Behavior", values="beta")
+
+star_table = results_df.pivot(
+    index="ROI",
+    columns="Behavior",
+    values="stars"
+)
+
+plt.figure(figsize=(14, 8))
+plt.figure(figsize=(14, 8))
+
+ax = sns.heatmap(
+    beta_table,
+    annot=False,   # ❗关闭默认 annot
+    cmap="coolwarm",
+    center=0,
+    linewidths=0.5
+)
+
+# ===== 要高亮的 ROI =====
+highlight_rois = [
+    "fusiform",
+    "lateralorbitofrontal",
+    "rostralanteriorcingulate",
+    "transversetemporal"
+]
+
+# ===== 手动加星号 =====
+for i in range(beta_table.shape[0]):        # 行（ROI）
+    for j in range(beta_table.shape[1]):    # 列（behavior）
+
+        star = star_table.iloc[i, j]
+
+        if star != "":
+            roi_name = beta_table.index[i]
+
+            # 判断是否高亮
+            if roi_name in highlight_rois:
+                color = "red"
+            else:
+                color = "black"
+
+            ax.text(
+                j + 0.5,
+                i + 0.5,
+                star,
+                ha='center',
+                va='center',
+                color=color,
+                fontsize=10,
+                fontweight='bold'
+            )
+
+plt.title("Brain–Behavior Associations (* FDR corrected)")
+plt.xticks(rotation=45, ha="right")
+
+plt.tight_layout(rect=[0, 0.05, 1, 1])  
+plt.figtext(
+    0.5, 0.01,
+    "Note: Asterisks indicate FDR-corrected significance (* p < 0.05, ** p < 0.01). "
+    "Red asterisks denote the overlapped p-value between surface area and gray matter volume.",
+    ha="center",
+    fontsize=10
+)
+
+plt.tight_layout(rect=[0, 0.05, 1, 1])  
+plt.show()
+
+# ========= 13. Trajectory plot =========
+fig, axes = plt.subplots(2, 4, figsize=(20, 8), sharex=True)
+axes = axes.flatten()
+
+for i, roi in enumerate(rois[:8]):  # 只画前8个避免爆图
+
+    ax = axes[i]
+
+    model = smf.mixedlm(
+        f"{roi} ~ log_age + Sex + MEd + HLE + FHD",
+        df,
+        groups=df["subject"]
+    ).fit()
+
+    age_range = np.linspace(df["age"].min(), df["age"].max(), 100)
+    log_age_range = np.log1p(age_range)
+
+    pred_df = pd.DataFrame({
+        "age": age_range,
+        "log_age": log_age_range,
+        "Sex": df["Sex"].mode()[0],
+        "FHD": df["FHD"].mode()[0],
+        "MEd": 0,
+        "HLE": 0
+    })
+
+    pred_df["pred"] = model.predict(pred_df)
+
+    for _, sub_df in df.groupby("subject"):
+        sub_df = sub_df.sort_values("age")
+        ax.plot(sub_df["age"], sub_df[roi], alpha=0.2)
+
+    ax.plot(pred_df["age"], pred_df["pred"], color="black", linewidth=3)
+
+    ax.set_title(roi)
+    ax.set_xlabel("Age (Months)")
+    ax.set_ylabel("Gray Matter Volume")
+
+
+plt.tight_layout()
+plt.show()

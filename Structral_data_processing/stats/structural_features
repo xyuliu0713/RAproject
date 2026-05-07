@@ -1,0 +1,126 @@
+# "ROI_merged_table_with_age.csv" 这个文件是把所有 session 的 ROI 数据合并在一起，并且加上了 age 信息。每行代表一个 subject 在某个 session 的数据。
+
+# id	session	age	area_lh_bankssts_area	area_lh_fusiform_area	area_lh_inferiorparietal_area	area_lh_middletemporal_area	area_lh_parsopercularis_area	area_lh_parstriangularis_area	area_lh_superiortemporal_area	area_lh_supramarginal_area	
+# curv_lh_bankssts_meancurv	curv_lh_fusiform_meancurv	curv_lh_inferiorparietal_meancurv	curv_lh_middletemporal_meancurv	curv_lh_parsopercularis_meancurv	curv_lh_parstriangularis_meancurv	curv_lh_superiortemporal_meancurv	curv_lh_supramarginal_meancurv	
+# gmvolume_lh_bankssts_volume	gmvolume_lh_fusiform_volume	gmvolume_lh_inferiorparietal_volume	gmvolume_lh_middletemporal_volume	gmvolume_lh_parsopercularis_volume	gmvolume_lh_parstriangularis_volume	gmvolume_lh_superiortemporal_volume	gmvolume_lh_supramarginal_volume	
+# thickness_lh_bankssts_thickness	thickness_lh_fusiform_thickness	thickness_lh_inferiorparietal_thickness	thickness_lh_middletemporal_thickness	thickness_lh_parsopercularis_thickness	thickness_lh_parstriangularis_thickness	thickness_lh_superiortemporal_thickness	thickness_lh_supramarginal_thickness	
+# wmvolume_CerebralWhiteMatterVol	wmvolume_CortexVol	wmvolume_SubCortGrayVol	wmvolume_TotalGrayVol	wmvolume_lhCerebralWhiteMatterVol	wmvolume_lhCortexVol
+
+import pandas as pd
+from pathlib import Path
+
+base_dir = Path("/Volumes/xyu/files/ds006169-2/structural_features")
+
+session_map = {
+    "infant": 1,
+    "toddler": 2,
+    "prereading": 3,
+    "beginreading": 4,
+    "emereading": 5
+}
+
+metrics = ["area", "curv", "gmvolume", "thickness", "wmvolume"]
+
+all_data = []
+
+for session_name, session_id in session_map.items():
+    session_path = base_dir / session_name
+
+    for metric in metrics:
+        file_path = session_path / f"lh_{metric}_ROI.csv"
+
+        if not file_path.exists():
+            continue
+
+        df = pd.read_csv(file_path)
+
+        subject_col = df.columns[0]
+
+        df = df.melt(
+            id_vars=subject_col,
+            var_name="ROI",
+            value_name="value"
+        )
+
+        df["subject"] = df[subject_col]
+        df["session"] = session_id
+        df["metric"] = metric
+
+        df = df[["subject", "session", "metric", "ROI", "value"]]
+
+        all_data.append(df)
+
+long_df = pd.concat(all_data, ignore_index=True)
+
+# ✅ 修正点在这里
+wide_df = long_df.pivot_table(
+    index=["subject", "session"],
+    columns=["metric", "ROI"],
+    values="value",
+    aggfunc="mean"
+)
+
+wide_df = wide_df.sort_index(axis=1)
+
+# ✅ 👉 关键修复：把多层列变成普通列
+
+wide_df.columns = [
+
+    f"{metric}_{roi}" for metric, roi in wide_df.columns
+
+]
+
+# =========================
+
+# 加入 age 信息
+
+# =========================
+
+participants = pd.read_csv(
+
+    "/Volumes/xyu/files/ds006169-2/participants.tsv",
+
+    sep="\t"
+
+)
+
+# 👉 确保列名一致（很关键）
+
+participants = participants.rename(columns={
+
+    "participant_id": "subject"
+
+})
+
+participants = participants[["subject", "session", "age"]]
+
+# 👉 merge（核心步骤）
+
+final_df = wide_df.reset_index().merge(
+
+    participants,
+
+    on=["subject", "session"],
+
+    how="left"
+
+)
+
+# 可选：再设回 multi-index
+
+final_df = final_df.set_index(["subject", "session"])
+
+# ✅ 在这里加
+cols = list(final_df.columns)
+cols.remove("age")
+final_df = final_df[["age"] + cols]
+
+# 👉 再保存
+output_path = base_dir / "ROI_merged_table_with_age.csv"
+final_df.to_csv(output_path)
+
+print("saved to:", output_path)
+
+
+
+

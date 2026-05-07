@@ -1,0 +1,162 @@
+# generate the merged csv file for all timepoints in /reorg, which will be used for plotting and stats
+
+import pandas as pd
+
+# 文件路径
+files = {
+    #"infant": "/Volumes/xyu/files/ds006169-2/structural_features/infant/prev./lh_meancurv.csv",
+    #"toddler": "/Volumes/xyu/files/ds006169-2/structural_features/toddler/prev./lh_meancurv.csv",
+    #"prereading": "/Volumes/xyu/files/ds006169-2/structural_features/prereading/prev./lh_wmvolume.csv",
+    #"beginreading": "/Volumes/xyu/files/ds006169-2/structural_features/beginreading/prev./lh_wmvolume.csv",
+    #"emereading": "/Volumes/xyu/files/ds006169-2/structural_features/emereading/prev./lh_wmvolume.csv"
+    "infant": "/Volumes/xyu/files/ds006169-2/structural_features/add/lh_area_merged1.csv",
+    "toddler": "/Volumes/xyu/files/ds006169-2/structural_features/add/lh_area_merged2.csv",
+    "prereading": "/Volumes/xyu/files/ds006169-2/structural_features/add/lh_area_merged3.csv",
+    "beginreading": "/Volumes/xyu/files/ds006169-2/structural_features/add/lh_area_merged4.csv",
+    "emereading": "/Volumes/xyu/files/ds006169-2/structural_features/add/lh_area_merged5.csv"
+}
+# wmvolume.csv 
+# lh_curvature.csv
+# lh_thickness.csv
+# lh_area.csv
+# lh_gmvolume.csv
+
+
+
+
+# session mapping
+session_map = {
+    "infant": 1,
+    "toddler": 2,
+    "prereading": 3,
+    "beginreading": 4,
+    "emereading": 5
+}
+
+dfs = []
+
+for stage, path in files.items():
+    df = pd.read_csv(path)
+    df.rename(columns={"id": "subject"}, inplace=True)
+    # 强制设置 session（避免原文件不一致）
+    df["session"] = session_map[stage]
+    
+    dfs.append(df)
+
+# merge all timepoints
+
+df_all = pd.concat(dfs, ignore_index=True)
+
+# extract numeric subject id for sorting
+
+df_all["sub_id"] = df_all["subject"].str.extract(r"(\d+)").astype(int)
+
+df_all = df_all.sort_values(by=["sub_id", "session"])
+
+df_all = df_all.drop(columns=["sub_id"])
+
+# =========================
+
+# 2. participants.tsv (covariates + behavior)
+
+# =========================
+
+participants = pd.read_csv(
+
+    "/Volumes/xyu/files/ds006169-2/participants.tsv",
+
+    sep="\t"
+
+)
+
+# rename id if needed
+
+participants.rename(columns={"participant_id": "subject"}, inplace=True)
+
+# =========================
+
+# 3. keep only needed columns
+
+# =========================
+
+cols_to_keep = [
+
+    "subject", "session", "age",
+    
+    "timepoint", "Sex", "MEd", "HLE", "FHD",
+
+    # # behavioral variables you listed
+
+    # "pre_word_access_raw",
+
+    # "pre_word_fluency_raw",
+
+    # "pre_substitution_raw",
+
+    # "pre_wjiv_oralcomp_raw",
+
+    # "pre_wjiv_pvocab_raw",
+
+    # "pre_wjiv_phonproc_standard",
+
+    # "pre_wjiv_orallang_standard",
+
+    # "kbit2_raw",
+
+    # "kbit2_standard",
+    # # 以及其他你想保留的变量，比如：
+    # 'beg_wrmt3_wrd_id_stnd', 
+    
+    # 'beg_wrmt3_wrdatt_stnd'
+
+]
+
+participants = participants[[c for c in cols_to_keep if c in participants.columns]]
+
+# 2. df_all 删除重复列（关键！）
+cols_to_remove = ["age", "timepoint", "Sex", "MEd", "HLE", "FHD"]
+
+df_all = df_all.drop(columns=[c for c in cols_to_remove if c in df_all.columns])
+
+
+# =========================
+
+# 4. merge brain + participants
+
+# =========================
+if "age" in df_all.columns:
+    df_all = df_all.drop(columns=["age"])
+
+df_all = pd.merge(df_all, participants, on=["subject", "session"], how="left")
+
+# =========================
+
+# 5. final column order
+
+# =========================
+
+# 想固定放在前面的列
+priority_cols = ["subject", "session", "age", "timepoint", "Sex", "MEd", "HLE", "FHD"]
+
+# 只保留实际存在的列（避免报错）
+priority_cols = [col for col in priority_cols if col in df_all.columns]
+
+# 其余列自动接在后面
+other_cols = [col for col in df_all.columns if col not in priority_cols]
+
+# 重新排序
+df_all = df_all[priority_cols + other_cols]
+
+# =========================
+
+# 6. save
+
+# =========================
+
+output_path = "/Volumes/xyu/files/ds006169-2/structural_features/add/lh_area_merged.csv"
+
+df_all.to_csv(output_path, index=False)
+
+print("✅ 合并完成，已保存到：", output_path)
+
+print(df_all.head())

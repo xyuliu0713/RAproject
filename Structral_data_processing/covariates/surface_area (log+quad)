@@ -1,0 +1,131 @@
+import pandas as pd
+import numpy as np
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+
+# ========= 1. 读取数据 =========
+df = pd.read_csv("/Volumes/xyu/files/ds006169-2/structural_features/reorg/lh_area.csv")
+
+# ========= 2. 基础处理 =========
+# ⚠️ 避免 log(0)
+df = df[df["age"] > 0].copy()
+
+df["log_age"] = np.log(df["age"])
+df["age_sq"] = df["age"] ** 2
+
+# ========= 3. covariates =========
+df["Sex"] = df["Sex"].astype("category")
+df["FHD"] = df["FHD"].astype("category")
+
+df["MEd"] = pd.to_numeric(df["MEd"], errors="coerce")
+df["HLE"] = pd.to_numeric(df["HLE"], errors="coerce")
+
+# ⚠️ 删除 NA
+df = df.dropna().copy()
+
+# ⚠️ 标准化（避免除0）
+if df["MEd"].std() != 0:
+    df["MEd"] = (df["MEd"] - df["MEd"].mean()) / df["MEd"].std()
+
+if df["HLE"].std() != 0:
+    df["HLE"] = (df["HLE"] - df["HLE"].mean()) / df["HLE"].std()
+
+# ========= 4. ROI =========
+log_rois = [
+    "bankssts",
+    "fusiform",
+    "inferiorparietal",
+    "parsopercularis",
+    "parstriangularis"
+]
+
+quad_rois = [
+    "middletemporal",
+    "superiortemporal",
+    "supramarginal"
+]
+
+rois = log_rois + quad_rois
+
+# ========= 5. plot =========
+fig, axes = plt.subplots(2, 4, figsize=(20, 8), sharex=True)
+axes = axes.flatten()
+
+# ========= 6. loop =========
+for i, roi in enumerate(rois):
+
+    ax = axes[i]
+    print(f"\n===== Processing {roi} =====")
+
+    # ⚠️ 检查 ROI 是否存在
+    if roi not in df.columns:
+        print(f"⚠️ {roi} not found, skipping")
+        continue
+
+    # ========= 模型 =========
+    if roi in log_rois:
+        formula = f"{roi} ~ log_age + Sex + MEd + HLE + FHD"
+        re_formula = "1 + log_age"   # ✅ 更稳定
+    else:
+        formula = f"{roi} ~ age + age_sq + Sex + MEd + HLE + FHD"
+        re_formula = "1 + age"
+
+    try:
+        model = smf.mixedlm(
+            formula,
+            df,
+            groups=df["subject"],
+            re_formula=re_formula
+        )
+
+        result = model.fit(method="lbfgs", maxiter=200)
+
+    except Exception as e:
+        print(f"❌ Model failed for {roi}: {e}")
+        continue
+
+    print(result.summary())
+
+    # ========= prediction =========
+    age_range = np.linspace(df["age"].min(), df["age"].max(), 100)
+
+    pred_df = pd.DataFrame({
+        "age": age_range,
+        "log_age": np.log(age_range),
+        "age_sq": age_range ** 2,
+        "Sex": df["Sex"].mode()[0],
+        "FHD": df["FHD"].mode()[0],
+        "MEd": 0,
+        "HLE": 0
+    })
+
+    # ⚠️ 确保 category levels 一致
+    pred_df["Sex"] = pd.Categorical(pred_df["Sex"], categories=df["Sex"].cat.categories)
+    pred_df["FHD"] = pd.Categorical(pred_df["FHD"], categories=df["FHD"].cat.categories)
+
+    try:
+        pred_df["pred"] = result.predict(pred_df)
+    except Exception as e:
+        print(f"❌ Prediction failed for {roi}: {e}")
+        continue
+
+    # ========= individual =========
+    for _, sub_df in df.groupby("subject"):
+        sub_df = sub_df.sort_values("age")
+        ax.plot(sub_df["age"], sub_df[roi], alpha=0.2)
+
+    # ========= fit =========
+    ax.plot(
+        age_range,
+        pred_df["pred"],
+        color="black",
+        linewidth=3
+    )
+
+    ax.set_title(roi)
+    ax.set_xlabel("Age (Months)")
+    ax.set_ylabel("Surface Area (mm²)")
+
+# ========= layout =========
+plt.tight_layout()
+plt.show()

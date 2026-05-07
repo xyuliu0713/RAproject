@@ -1,0 +1,86 @@
+import pandas as pd
+import numpy as np
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+
+# ========= 1. 读取数据 =========
+df = pd.read_csv("/Volumes/xyu/files/ds006169-2/structural_features/reorg/lh_gmvolume.csv")
+
+# ========= 2. log(age) =========
+df["log_age"] = np.log(df["age"])
+
+# ========= 3. ROI list =========
+rois = [
+    "bankssts",
+    "fusiform",
+    "inferiorparietal",
+    "middletemporal",
+    "parsopercularis",
+    "parstriangularis",
+    "superiortemporal",
+    "supramarginal"
+]
+
+# ========= 4. 创建 2×4 子图 =========
+fig, axes = plt.subplots(2, 4, figsize=(20, 8), sharex=True)
+axes = axes.flatten()
+
+# ========= 5. loop 每个 ROI =========
+for i, roi in enumerate(rois):
+
+    ax = axes[i]
+
+    print(f"\n===== Processing {roi} =====")
+
+    # ========= Mixed Effects Model =========
+    model = smf.mixedlm(
+        f"{roi} ~ log_age",
+        df,
+        groups=df["subject"],
+        re_formula="~log_age"
+    )
+    result = model.fit()
+
+    print(result.summary())
+
+    # ========= prediction curve =========
+    age_range = np.linspace(df["age"].min(), df["age"].max(), 100)
+    log_age_range = np.log(age_range)
+
+    pred_df = pd.DataFrame({
+        "age": age_range,
+        "log_age": log_age_range
+    })
+
+    pred_df["pred"] = result.predict(pred_df)
+
+    # ========= subject trajectories =========
+    for subject_id, sub_df in df.groupby("subject"):
+        sub_df = sub_df.sort_values("age")
+
+        if roi in sub_df.columns:
+            ax.plot(
+                sub_df["age"],
+                sub_df[roi],
+                alpha=0.2,
+                linewidth=1
+            )
+
+    # ========= population fit =========
+    ax.plot(
+        pred_df["age"],
+        pred_df["pred"],
+        linewidth=3,
+        color="black",
+        label="LME fit"
+    )
+
+    # ========= formatting =========
+    ax.set_title(roi)
+    ax.set_xlabel("Age (Months)")
+    ax.set_ylabel("Gray Matter Volume (mm³)")
+
+# ========= layout =========
+plt.tight_layout()
+plt.show()
+

@@ -10,7 +10,7 @@ import AFQ.data.fetch as afd
 
 from AFQ.definitions.image import RoiImage, ImageFile
 
-bids_path='/n/holyscratch01/LABS/gaab_mri_l3/Lab/diff_long/baby-pyafq/INSERT_SUB'
+bids_path = '/Volumes/xyu/ds006169-3'
 
 
 my_afq = GroupAFQ(
@@ -21,11 +21,11 @@ my_afq = GroupAFQ(
     bundle_info=abd.PediatricBundleDict(),
     reg_subject_spec='b0',
     import_tract={
-        "suffix": "tractography",
-        "scope": "my_tractography"
+        "extension": "tck",
+        "scope": "tractography"
     },
     segmentation_params={
-        "filter_by_endpoints": False
+        "fa_threshold": 0.2
     })
 
 my_afq.export_all()

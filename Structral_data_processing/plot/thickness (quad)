@@ -1,0 +1,83 @@
+import pandas as pd
+import numpy as np
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+
+# ========= 1. 读取数据 =========
+df = pd.read_csv("/Volumes/xyu/files/ds006169-2/structural_features/reorg/lh_thickness.csv")
+
+# ========= 2. quadratic age =========
+df["age2"] = df["age"] ** 2   # ✅ 二次项
+
+# ========= 3. ROI list =========
+rois = [
+    "bankssts",
+    "fusiform",
+    "inferiorparietal",
+    "middletemporal",
+    "parsopercularis",
+    "parstriangularis",
+    "superiortemporal",
+    "supramarginal"
+]
+
+
+# ========= 5. loop =========
+for i, roi in enumerate(rois):
+
+    ax = axes[i]
+    print(f"\n===== Processing {roi} =====")
+
+    # ========= Quadratic Mixed Model =========
+    model = smf.mixedlm(
+        f"{roi} ~ age + age2",
+        df,
+        groups=df["subject"],
+        re_formula="~age"   # ✅ 推荐先不要给 age² random slope
+    )
+
+    result = model.fit(method="lbfgs")
+    print(result.summary())
+
+    # ========= prediction =========
+    age_range = np.linspace(df["age"].min(), df["age"].max(), 100)
+
+    pred_df = pd.DataFrame({
+        "age": age_range,
+        "age2": age_range ** 2
+    })
+
+    pred_df["pred"] = result.predict(pred_df)
+
+    # ========= subject trajectories =========
+    for subject_id, sub_df in df.groupby("subject"):
+        sub_df = sub_df.sort_values("age")
+
+        if roi in sub_df.columns:
+            ax.plot(
+                sub_df["age"],
+                sub_df[roi],
+                alpha=0.2,
+                linewidth=1
+            )
+
+    # ========= population fit =========
+    ax.plot(
+        pred_df["age"],
+        pred_df["pred"],
+        linewidth=3,
+        color="black",
+        label="Quadratic LME fit"
+    )
+
+    # ========= formatting =========
+    ax.set_title(roi)
+    ax.set_xlabel("Age (Months)")
+    ax.set_ylabel("Cortical Thickness (mm)")
+
+# ========= layout =========
+plt.tight_layout()
+
+# ========= 保存 =========
+
+plt.show()

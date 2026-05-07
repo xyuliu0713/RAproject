@@ -1,51 +1,46 @@
-#!/bin/python
-
 import os
-
 import os.path as op
 
-from AFQ.api.group import GroupAFQ
+import dipy
+import matplotlib.pyplot as plt
+import nibabel as nib
 
+from AFQ.api.group import GroupAFQ
 import bids
 
-# ============================
+from dipy.data import fetch_bundle_atlas_hcp842
 
-# BIDS 数据根目录
+fetch_bundle_atlas_hcp842()
 
-# ============================
-
-bids_path = '/Volumes/xyu/ds006169'
-
-# ============================
-
-# AFQ Group Analysis
-
-# ============================
+bids_path = '/Volumes/xyu/ds006169-1'
 
 my_afq = GroupAFQ(
-
     bids_path,
-
-    #preproc_pipeline='mrtrix',
-
+    preproc_pipeline='mrtrix',
     import_tract={
-
-        "suffix": "tractography",
-
-        "scope": "my_tractography"
-
+        "extension": "tck",
+        "scope": "tractography"
     },
-    #bids_filters={
-
-    #    "suffix": "dwi",
-
-    #}
 )
 
-# ============================
+# 🔥 1️⃣ 生成 bundles（tract segmentation）
 
-# 运行 + 导出
+bundles = my_afq.export("bundles")
 
-# ============================
+print("Bundles done:", bundles)
 
-my_afq.export_all()
+# 🔥 2️⃣ 生成 tract profiles（FA沿束）
+
+profiles = my_afq.export("profiles")
+
+print("Profiles done:", profiles)
+
+# 🔥 3️⃣ 生成可视化（3D tract 图）
+
+viz = my_afq.export("viz")
+
+print("Visualization done:", viz)
+
+#my_afq.export_all()
+#print(my_afq.export())
+

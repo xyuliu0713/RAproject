@@ -1,0 +1,132 @@
+import os
+
+from pathlib import Path
+
+# 👉 修改成你的路径
+
+ROOT = Path("/Volumes/xyu/ds006169/derivatives/mrtrix")
+
+def rename_file(old_path, new_path):
+
+    # 跳过隐藏文件
+
+    if old_path.name.startswith("._"):
+
+        return
+
+    if old_path == new_path:
+
+        return
+
+    if new_path.exists():
+
+        print(f"[跳过] 已存在: {new_path.name}")
+
+        return
+
+    try:
+
+        print(f"[重命名]\n  {old_path.name}\n→ {new_path.name}\n")
+
+        old_path.rename(new_path)
+
+    except Exception as e:
+
+        print(f"[错误] 重命名失败: {old_path} -> {new_path}\n{e}")
+
+def move_file(old_path, new_path):
+
+    # 跳过隐藏文件
+
+    if old_path.name.startswith("._"):
+
+        return
+
+    if new_path.exists():
+
+        print(f"[跳过] 已存在: {new_path.name}")
+
+        return
+
+    try:
+
+        print(f"[移动] {old_path.name} → {new_path.parent.name}/")
+
+        old_path.rename(new_path)
+
+    except Exception as e:
+
+        print(f"[错误] 移动失败: {old_path} -> {new_path}\n{e}")
+
+for sub_dir in ROOT.glob("sub-*"):
+
+    for ses_dir in sub_dir.glob("ses-*"):
+
+        # ===== 1️⃣ 处理 dwi 文件 =====
+
+        dwi_dir = ses_dir / "dwi"
+
+        if dwi_dir.exists():
+
+            for f in list(dwi_dir.iterdir()):
+
+                if f.name.startswith("._"):
+
+                    continue
+
+                name = f.name
+
+                # 👉 streamlines.tck → 加 desc + suffix
+
+                if name.endswith("_streamlines.tck"):
+
+                    new_name = name.replace(
+                        "_desc-tractography_streamlines.tck"
+                        "_tractography.tck",
+                    )
+
+                    rename_file(f, f.with_name(new_name))
+
+        # ===== 2️⃣ 处理 anat 里的文件 =====
+
+        anat_dir = ses_dir / "anat"
+
+        if anat_dir.exists():
+
+            dwi_dir.mkdir(exist_ok=True)
+
+            for f in list(anat_dir.iterdir()):
+
+                if f.name.startswith("._"):
+
+                    continue
+
+                name = f.name
+
+                # 👉 修 brain_mask → 加 suffix=mask
+
+                if "brain_mask" in name and name.endswith(".nii.gz"):
+
+                    new_name = name.replace(
+
+                        "brain_mask.nii.gz",
+
+                        "brain_mask_mask.nii.gz"
+
+                    )
+
+                    new_path = f.with_name(new_name)
+
+                    rename_file(f, new_path)
+
+                    f = new_path  # 更新引用
+
+                # 👉 所有 *_dwi.nii.gz 移到 dwi/
+
+                if name.endswith("_dwi.nii.gz"):
+
+                    target = dwi_dir / f.name
+
+                    move_file(f, target)
+
+print("\n✅ 全部处理完成！")

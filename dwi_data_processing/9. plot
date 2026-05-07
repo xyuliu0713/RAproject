@@ -1,0 +1,209 @@
+import os
+
+import os.path as op
+
+import nibabel as nib
+
+import numpy as np
+
+from dipy.io.streamline import load_trk
+
+from dipy.tracking.streamline import transform_streamlines
+
+from dipy.stats.analysis import afq_profile
+
+from fury import actor, window
+
+# ========= 参数 =========
+
+dir_in = "/Volumes/xyu/ds006169-1"
+
+dir_out = "/Volumes/xyu/output"
+
+tract = "CST"   # 你要分析的 tract
+
+hem_list = ["L", "R"]
+
+# ========= 找所有 subjects =========
+
+subjects = [d for d in os.listdir(dir_in) if d.startswith("sub-")]
+
+for sub_id in subjects:
+
+    sub_path = op.join(dir_in, sub_id)
+
+    # ========= 找所有 sessions =========
+
+    sessions = [s for s in os.listdir(sub_path) if s.startswith("ses-")]
+
+    for ses_id in sessions:
+
+        print(f"Processing {sub_id} {ses_id}")
+
+        deriv_path = op.join(dir_in, "derivatives")
+
+        afq_path = op.join(
+
+            deriv_path,
+
+            "afq",
+
+            sub_id,
+
+            ses_id
+
+        )
+
+        bundle_path = op.join(afq_path, "clean_bundles")
+
+        # ========= 检查是否存在 =========
+
+        if not op.exists(bundle_path):
+
+            print(f"Skip {sub_id} {ses_id} (no AFQ output)")
+
+            continue
+
+        # ========= 加载 FA =========
+
+        fa_file = op.join(
+
+            afq_path,
+
+            f"{sub_id}_{ses_id}_dwi_model-DTI_desc-FA_dwi.nii.gz"
+
+        )
+
+        if not op.exists(fa_file):
+
+            print(f"Missing FA: {sub_id} {ses_id}")
+
+            continue
+
+        fa_img = nib.load(fa_file)
+
+        fa = fa_img.get_fdata()
+
+        # ========= 加载 b0 =========
+
+        b0_file = op.join(
+
+            afq_path,
+
+            f"{sub_id}_{ses_id}_dwi_desc-b0_dwi.nii.gz"
+
+        )
+
+        if not op.exists(b0_file):
+
+            print(f"Missing b0: {sub_id} {ses_id}")
+
+            continue
+
+        b0_img = nib.load(b0_file)
+
+        b0 = b0_img.get_fdata()
+
+        for hem in hem_list:
+
+            trk_file = op.join(
+
+                bundle_path,
+
+                f"{sub_id}_{ses_id}_dwi_space-RASMM_model-probCSD_algo-AFQ_desc-{tract}{hem}_tractography.trk"
+
+            )
+
+            if not op.exists(trk_file):
+
+                print(f"Missing tract: {sub_id} {ses_id} {tract}{hem}")
+
+                continue
+
+            # ========= 加载 tract =========
+
+            sft_trk = load_trk(trk_file, fa_img)
+
+            sft_trk.to_rasmm()
+
+            trk_t1w = transform_streamlines(
+
+                sft_trk.streamlines,
+
+                np.linalg.inv(b0_img.affine)
+
+            )
+
+            # ========= tract profile =========
+
+            sft_trk.to_vox()
+
+            trk_profile = afq_profile(
+
+                fa,
+
+                sft_trk.streamlines,
+
+                affine=np.eye(4)
+
+            )
+
+            # ========= 可视化 =========
+
+            def lines_as_tubes(sl, line_width, **kwargs):
+
+                line_actor = actor.line(sl, **kwargs)
+
+                line_actor.GetProperty().SetRenderLinesAsTubes(1)
+
+                line_actor.GetProperty().SetLineWidth(line_width)
+
+                return line_actor
+
+            trk_actor = lines_as_tubes(
+
+                trk_t1w, 8, colors=(0, 0.8, 0.4)
+
+            )
+
+            slicer = actor.slicer(b0)
+
+            slicer.display(x=b0.shape[0] // 2)
+
+            scene = window.Scene()
+
+            scene.add(trk_actor)
+
+            scene.add(slicer)
+
+            # camera
+
+            if hem == 'L':
+
+                scene.set_camera(position=(250, 30, 40),
+
+                                 focal_point=(55, 45, 30),
+
+                                 view_up=(0, 0, 1))
+
+            else:
+
+                scene.set_camera(position=(-140, 43, 40),
+
+                                 focal_point=(55, 45, 30),
+
+                                 view_up=(0, 0, 1))
+
+            scene.background((255, 255, 255))
+
+            # ========= 输出 =========
+
+            out_file = op.join(
+
+                dir_out,
+
+                f"{sub_id}_{ses_id}_{tract}{hem}.png"
+
+            )
+
+            window.record(scene, out_path=out_file, size=(1200, 1200))

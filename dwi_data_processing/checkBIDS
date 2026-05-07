@@ -1,0 +1,10 @@
+from bids import BIDSLayout
+
+layout = BIDSLayout('/Volumes/xyu/ds006169-3', derivatives=True)
+
+dwi = layout.get(subject='79', session='04', suffix='dwi')
+
+tract = layout.get(subject='79', session='04', suffix='tractography', scope='tractography')
+
+print(len(dwi), len(tract))
+

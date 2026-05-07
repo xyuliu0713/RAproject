@@ -1,0 +1,97 @@
+# ROI-level LME → subject curves → 平均 → % change → ROI再平均 → 一条最终曲线
+
+import pandas as pd
+import numpy as np
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+
+# ========= 1. 读取数据 =========
+df = pd.read_csv("/Volumes/xyu/files/ds006169-2/structural_features/reorg/lh_area.csv")
+
+# ========= 2. log(age) =========
+df = df[df["age"] > 0]
+df["log_age"] = np.log(df["age"])
+df["age_sq"] = df["age"] ** 2
+
+# ========= 3. ROI 分类 =========
+log_rois = [
+    "bankssts","fusiform","inferiorparietal",
+    "parsopercularis","parstriangularis"
+]
+
+quad_rois = [
+    "middletemporal","superiortemporal","supramarginal"
+]
+
+rois = log_rois + quad_rois
+
+# ========= 4. age grid =========
+age_range = np.linspace(df["age"].min(), df["age"].max(), 100)
+log_age_range = np.log(age_range)
+age_sq_range = age_range ** 2
+
+# ========= 5. 存所有 ROI 的 % change =========
+all_roi_percent = []
+
+for roi in rois:
+
+    print(f"Processing {roi}")
+
+    # ========= 选择模型 =========
+    if roi in log_rois:
+
+        model = smf.mixedlm(
+            f"{roi} ~ log_age",
+            df,
+            groups=df["subject"],
+            re_formula="~log_age"
+        )
+        result = model.fit(method="lbfgs")
+
+        pred_df = pd.DataFrame({
+            "log_age": log_age_range
+        })
+
+    else:
+
+        model = smf.mixedlm(
+            f"{roi} ~ age + age_sq",
+            df,
+            groups=df["subject"],
+            re_formula="~age"
+        )
+        result = model.fit(method="lbfgs")
+
+        pred_df = pd.DataFrame({
+            "age": age_range,
+            "age_sq": age_sq_range
+        })
+
+    # ========= prediction =========
+    y_pred = result.predict(pred_df)
+
+    # ========= % change =========
+    baseline = np.mean(y_pred[:5])
+    percent_change = (y_pred - baseline) / baseline * 100
+
+    all_roi_percent.append(percent_change.values)
+
+# ========= 6. ROI 平均 =========
+all_roi_percent = np.array(all_roi_percent)
+
+mean_percent = np.mean(all_roi_percent, axis=0)
+std_percent = np.std(all_roi_percent, axis=0)
+
+# ========= 7. 画图 =========
+plt.figure(figsize=(6, 5))
+
+plt.plot(age_range, mean_percent, linewidth=3,
+         label="Mean % change (log + quad mixed)")
+
+plt.xlabel("Age (Months)")
+plt.ylabel("% Change")
+plt.title("Average Surface Area Trajectory")
+
+plt.legend()
+plt.tight_layout()
+plt.show()

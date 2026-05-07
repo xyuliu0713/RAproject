@@ -1,0 +1,102 @@
+import pandas as pd
+import numpy as np
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+
+# ========= 1. 读取数据 =========
+df = pd.read_csv("/Volumes/xyu/files/ds006169-2/structural_features/reorg/lh_wmvolume.csv")
+
+# ========= 2. log(age) =========
+df["log_age"] = np.log1p(df["age"])
+
+
+# ========= 3. 确保 covariates 是 categorical / numeric =========
+# ⚠️ 根据你实际数据调整
+df["Sex"] = df["Sex"].astype("category")     # or 0/1
+df["FHD"] = df["FHD"].astype("category")
+
+df["MEd"] = pd.to_numeric(df["MEd"], errors="coerce")  # or .astype("category") if categorical
+df["HLE"] = pd.to_numeric(df["HLE"], errors="coerce") 
+df = df.dropna()
+df["MEd"] = (df["MEd"] - df["MEd"].mean()) / df["MEd"].std()
+df["HLE"] = (df["HLE"] - df["HLE"].mean()) / df["HLE"].std()
+# ========= 4. ROI list =========
+rois = [
+    "bankssts",
+    "fusiform",
+    "inferiorparietal",
+    "middletemporal",
+    "parsopercularis",
+    "parstriangularis",
+    "superiortemporal",
+    "supramarginal"
+]
+
+# ========= 5. plot =========
+fig, axes = plt.subplots(2, 4, figsize=(20, 8), sharex=True)
+axes = axes.flatten()
+
+# ========= 6. loop ROIs =========
+for i, roi in enumerate(rois):
+
+    ax = axes[i]
+    print(f"\n===== Processing {roi} =====")
+
+    # ========= UPDATED LME MODEL =========
+    model = smf.mixedlm(
+        f"{roi} ~ log_age + Sex + MEd + HLE + FHD",
+        df,
+        groups=df["subject"],
+        re_formula="~log_age"   # random intercept + slope
+    )
+
+    result = model.fit()
+
+    print(result.summary())
+
+    # ========= prediction curve =========
+    age_range = np.linspace(df["age"].min(), df["age"].max(), 100)
+    log_age_range = np.log1p(age_range)
+
+    # ⚠️ covariates must be set (use reference / mean values)
+    pred_df = pd.DataFrame({
+    "age": age_range,
+    "log_age": log_age_range,
+
+    # 固定住
+    "Sex": df["Sex"].mode()[0],
+    "FHD": df["FHD"].mode()[0],
+    "MEd": 0,
+    "HLE": 0
+    })
+
+    pred_df["pred"] = result.predict(pred_df)
+
+    # ========= subject trajectories =========
+    for subject_id, sub_df in df.groupby("subject"):
+        sub_df = sub_df.sort_values("age")
+
+        ax.plot(
+            sub_df["age"],
+            sub_df[roi],
+            alpha=0.2,
+            linewidth=1
+        )
+
+    # ========= population fit =========
+    ax.plot(
+        pred_df["age"],
+        pred_df["pred"],
+        linewidth=3,
+        color="black",
+        label="LME fit (covariate-adjusted)"
+    )
+
+    # ========= formatting =========
+    ax.set_title(roi)
+    ax.set_xlabel("Age (Months)")
+    ax.set_ylabel("White Matter Volume (mm³)")
+
+# ========= layout =========
+plt.tight_layout()
+plt.show()

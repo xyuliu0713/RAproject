@@ -1,0 +1,199 @@
+import pandas as pd
+import os
+
+# =========================
+# 手动设置 session（⚠️ 一定要放最前面）
+# =========================
+session_name = "emereading"   # ← 每次改这里
+session_map = {
+    "infant": 1,
+    "toddler": 2,
+    "prereading": 3,
+    "beginreading": 4,
+    "emereading": 5
+}
+
+# 设置路径
+os.chdir("/Volumes/xyu/files/ds006169-2/structural_features/emereading/prev.") # ← 每次改这里
+
+# =========================
+# 读 lh_area
+# =========================
+df = pd.read_csv("lh_area.txt", sep=r"\s+")
+
+# 第一列改名为 id
+df.rename(columns={df.columns[0]: "subject"}, inplace=True)
+
+# =========================
+# 选 ROI # ← 改这里
+# =========================
+cols = [
+    "subject", "lh_bankssts_area", "lh_caudalanteriorcingulate_area", "lh_caudalmiddlefrontal_area", "lh_cuneus_area", "lh_entorhinal_area", "lh_fusiform_area", "lh_inferiorparietal_area", 
+    "lh_inferiortemporal_area", "lh_isthmuscingulate_area", "lh_lateraloccipital_area", "lh_lateralorbitofrontal_area", "lh_lingual_area", "lh_medialorbitofrontal_area", "lh_middletemporal_area", 
+    "lh_parahippocampal_area", "lh_paracentral_area", "lh_parsopercularis_area", "lh_parsorbitalis_area", "lh_parstriangularis_area", "lh_pericalcarine_area", "lh_postcentral_area", "lh_posteriorcingulate_area", 
+    "lh_precentral_area", "lh_precuneus_area", "lh_rostralanteriorcingulate_area", "lh_rostralmiddlefrontal_area", "lh_superiorfrontal_area", "lh_superiorparietal_area", "lh_superiortemporal_area", 
+    "lh_supramarginal_area", "lh_frontalpole_area", "lh_temporalpole_area", "lh_transversetemporal_area", "lh_insula_area"
+]
+
+df_roi = df[cols].copy()
+
+# =========================
+# 改列名（去 lh_ 和 _meanthickness）
+# =========================
+df_roi.columns = [
+    col.replace("lh_", "").replace("_area", "") # ← 改这里
+    if col != "subject" else col
+    for col in df_roi.columns
+]
+
+# =========================
+# 加入 age 信息
+# =========================
+participants = pd.read_csv(
+    "/Volumes/xyu/files/ds006169-2/participants.tsv",
+    sep="\t"
+)
+
+# 统一列名
+participants = participants.rename(columns={
+    "participant_id": "subject"
+})
+
+# 保留需要的列
+participants = participants[["subject", "session", "timepoint", "age",	"Sex", "MEd", "HLE", "FHD",
+    "pre_word_access_raw",
+    "pre_word_fluency_raw",
+    "pre_substitution_raw",
+
+    "pre_wjiv_oralcomp_raw",
+    "pre_wjiv_pvocab_raw",
+    "pre_wjiv_phonproc_standard",
+    "pre_wjiv_orallang_standard",
+
+    "kbit2_raw",
+    "kbit2_standard",
+
+    "beg_wrmt3_wrd_id_raw",
+    "beg_wrmt3_wrdatt_raw",
+    "beg_wrmt3_wrd_id_stnd",
+    "beg_wrmt3_wrdatt_stnd",
+
+    "pre_beh_age",
+    "beg_beh_age",
+
+    "euler",
+    "qc_s",
+    "qc_ARC_L",
+    "qc_ARC_R",
+    "qc_ILF_L",
+    "qc_ILF_R",
+    "qc_SLF_L",
+    "qc_SLF_R",
+
+    "inf_num_books_adult_ord",
+    "inf_ebooks_adult_ord",
+    "inf_books_kids_ord",
+    "inf_ebooks_kids_ord",
+    "inf_reading_age_child_ord",
+    "inf_child_reading_time_ord",
+    "inf_child_count",
+    "inf_child_alphabet",
+    "inf_fam_readership",
+    "inf_fam_write_notes",
+    "inf_fam_write_creative",
+    "inf_fam_joke",
+
+    "tod_num_books_adult_ord",
+    "tod_ebooks_adult_ord",
+    "tod_books_kids_ord",
+    "tod_ebooks_kids_ord",
+    "tod_reading_age_child_ord",
+    "tod_child_reading_time_ord",
+    "tod_child_count",
+    "tod_child_alphabet",
+    "tod_fam_readership",
+    "tod_fam_write_notes",
+    "tod_fam_write_creative",
+    "tod_fam_joke",
+
+    "pre_num_books_adult_ord",
+    "pre_ebooks_adult_ord",
+    "pre_books_kids_ord",
+    "pre_ebooks_kids_ord",
+    "pre_reading_age_child_ord",
+    "pre_child_reading_time_ord",
+    "pre_child_count",
+    "pre_child_alphabet",
+    "pre_fam_readership",
+    "pre_fam_write_notes",
+    "pre_fam_write_creative",
+    "pre_fam_joke",
+
+    "beg_num_books_adult_ord",
+    "beg_ebooks_adult_ord",
+    "beg_books_kids_ord",
+    "beg_ebooks_kids_ord",
+    "beg_reading_age_child_ord",
+    "beg_child_reading_time_ord",
+    "beg_child_count",
+    "beg_child_alphabet",
+    "beg_fam_readership",
+    "beg_fam_write_notes",
+    "beg_fam_write_creative",
+    "beg_fam_joke",
+
+    "rea_num_books_adult_ord",
+    "rea_ebooks_adult_ord",
+    "rea_books_kids_ord",
+    "rea_ebooks_kids_ord",
+    "rea_reading_age_child_ord",
+    "rea_child_reading_time_ord",
+    "rea_child_count",
+    "rea_child_alphabet",
+    "rea_fam_readership",
+    "rea_fam_write_notes",
+    "rea_fam_write_creative",
+    "rea_fam_joke"
+    ]]
+# "participant_id", "session", "timepoint", "age",	"Sex", "MEd", "HLE", "FHD"
+# 👉 只保留当前 session
+participants = participants[
+    participants["session"] == 5  # ← 每次改这里
+]
+
+# merge
+final_df = df_roi.merge(
+    participants,
+    on="subject",
+    how="left"
+)
+
+# =========================
+# 加 session 数值编码
+# =========================
+final_df["session"] = session_map[session_name]
+
+# =========================
+
+# 调整列顺序
+
+# =========================
+
+cols = list(final_df.columns)
+
+for col in ["subject", "session", "timepoint", "age",	"Sex", "MEd", "HLE", "FHD"]:
+
+    cols.remove(col)
+
+final_df = final_df[
+
+    ["subject", "session", "timepoint", "age",	"Sex", "MEd", "HLE", "FHD"] + cols]
+
+# =========================
+# 保存
+# =========================
+output_path = "/Volumes/xyu/files/ds006169-2/structural_features/add/lh_area_merged5.csv" # ← 每次改这里
+final_df.to_csv(output_path, index=False)
+
+print("✅ 成功！（area）")
+print(final_df.head())

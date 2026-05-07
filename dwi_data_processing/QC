@@ -1,0 +1,9 @@
+import nibabel as nib
+
+import matplotlib.pyplot as plt
+
+fa = nib.load("...DTI_FA.nii.gz").get_fdata()
+
+plt.imshow(fa[:, :, fa.shape[2]//2], cmap="gray")
+
+plt.colorbar()

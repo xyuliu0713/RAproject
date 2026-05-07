@@ -1,0 +1,110 @@
+import pandas as pd
+import os
+
+# =========================
+# 手动设置 session（⚠️ 一定要放最前面）
+# =========================
+session_name = "prereading"   # ← 每次改这里
+session_map = {
+    "infant": 1,
+    "toddler": 2,
+    "prereading": 3,
+    "beginreading": 4,
+    "emereading": 5
+}
+
+# 设置路径
+os.chdir("/Volumes/xyu/files/ds006169-2/structural_features/prereading/prev.") # ← 每次改这里
+
+# =========================
+# 读 wmvolume
+# =========================
+df = pd.read_csv("wmvolume.txt", sep=r"\s+")
+
+# 第一列改名为 id
+df.rename(columns={df.columns[0]: "subject"}, inplace=True)
+
+
+# =========================
+# 选 ROI
+# =========================
+cols = [
+    "subject",
+    "wm-lh-bankssts",
+    "wm-lh-fusiform",
+    "wm-lh-inferiorparietal",
+    "wm-lh-middletemporal",
+    "wm-lh-parsopercularis",
+    "wm-lh-parstriangularis",
+    "wm-lh-superiortemporal",
+    "wm-lh-supramarginal"
+]
+
+# 筛选
+df_roi = df[cols]
+
+# =========================
+# 改列名（去 lh_ 和 _area）
+# =========================
+df_roi.columns = [
+    col.replace("wm-lh-", "")
+    if col != "subject" else col
+    for col in df_roi.columns
+]
+
+# =========================
+# 加入 age 信息
+# =========================
+participants = pd.read_csv(
+    "/Volumes/xyu/files/ds006169-2/participants.tsv",
+    sep="\t"
+)
+
+# 统一列名
+participants = participants.rename(columns={
+    "participant_id": "subject"
+})
+
+# 保留需要的列
+participants = participants[["subject", "session", "timepoint", "age",	"Sex", "MEd", "HLE", "FHD"]]
+# "participant_id", "session", "timepoint", "age",	"Sex", "MEd", "HLE", "FHD"
+# 👉 只保留当前 session
+participants = participants[
+    participants["session"] == 3  # ← 每次改这里
+]
+
+# merge
+final_df = df_roi.merge(
+    participants,
+    on="subject",
+    how="left"
+)
+
+# =========================
+# 加 session 数值编码
+# =========================
+final_df["session"] = session_map[session_name]
+
+# =========================
+
+# 调整列顺序
+
+# =========================
+
+cols = list(final_df.columns)
+
+for col in ["subject", "session", "timepoint", "age", "Sex", "MEd", "HLE", "FHD"]:
+
+    cols.remove(col)
+
+final_df = final_df[
+
+    ["subject", "session", "timepoint", "age",	"Sex", "MEd", "HLE", "FHD"] + cols]
+
+# =========================
+# 保存
+# =========================
+final_df.to_csv("lh_wmvolume.csv", index=False)
+
+print("✅ 成功！（wmvolume）")
+print(final_df.head())
