@@ -1,0 +1,323 @@
+# Longitudinal Early Brain Development Cohort Datasets
+
+This repository contains the **Calgary cohort** and **New England cohort** datasets used in the following study:
+
+Turesky TK, Escalante ES, Loh M, Gaab N.  
+*Longitudinal trajectories of brain development from infancy to school age and their relationship to literacy development*  
+https://doi.org/10.1101/2024.06.29.601366
+
+For corresponding code, please see:  
+https://github.com/TeddyTuresky/Longitudinal-Trajectories-Early-Brain-Development-Language/tree/main
+
+Dataset sources:
+
+- Calgary cohort: https://osf.io/axz5r/
+- New England cohort: https://openneuro.org/datasets/ds006169/versions/1.0.7
+
+---
+
+# Cohort Overview
+
+| Cohort | Subjects | Total Scans | Scanner | 
+|---|---|---|---|---|
+| Calgary Cohort | 126 | 431 | 3T GE, 32-channel head coil | 
+| New England Cohort | 80 | 192 | 3T Siemens, 32-channel head coil | 
+
+---
+
+# Calgary Cohort Dataset
+
+## General Information
+
+- **126 subjects, 431 scans in total**
+
+---
+
+## Data Dictionary for Measures
+
+| Variable | Description |
+|---|---|
+| `PreschoolID` | Participant ID |
+| `ScanID` | Scan ID |
+| `Age (Years)` | Age in years |
+| `Biological Sex (Female = 0; Male = 1)` | Biological sex |
+| `Handedness` | Handedness |
+| `Maternal Postsecondary Years of Education` | Maternal postsecondary years of education |
+| `Phonological Processing Standard Score` | Phonological processing subtest of the NEPSY-II, measuring phonemic awareness |
+| `Phonological Processing Raw Score` | Raw phonological processing score |
+| `Speeded Naming Standard Score` | Standardized speeded naming score |
+| `Speeded Naming Completion Time` | Completion time for speeded naming |
+| `Speeded Naming Number Correct` | Number correct for speeded naming |
+
+---
+
+## MRI Data Information
+
+All data were acquired on a **3.0 T General Electric scanner** with a **32-channel head coil**.
+
+### Structural Data
+
+**39 scans used in the article**
+
+Structural T1-weighted scans were acquired with:
+
+- TR = 8.23 ms
+- TE = 3.76 ms
+- Field of view = 230 mm
+- Voxel size = `0.45 × 0.45 × 0.9 mm^3`
+- 210 slices
+
+### Diffusion Data
+
+**51 scans used in the article**
+
+Diffusion echo planar imaging parameters:
+
+- TR = 6750 ms
+- TE = 79 ms
+- Flip angle = 90°
+- Field of view = 200 mm
+- Voxel size = `0.78 × 0.78 × 2.2 mm^3`
+- 50–55 slices
+- 30 diffusion directions (`b = 750 s/mm²`)
+- 5 non-diffusion-weighted volumes (`b = 0 s/mm²`)
+
+Additional acquisition details:
+
+- No slice-acceleration factor used
+- No reverse phase encoding (posterior-to-anterior) volume included
+
+---
+
+# New England Cohort Dataset
+
+## General Information
+
+All participants included in this repository had MR images from at least two timepoints that passed the QC standards for the referenced manuscript. Additional timepoints were included regardless of QC status.
+
+### Developmental Timepoints
+
+- **80 subjects, 192 scans in total**
+- `ses-01` = infant (~2–18 months); 62 participants
+- `ses-02` = toddler (~16–26 months); 21 participants
+- `ses-03` = pre-reading (~56–78 months / 4.6–6.5 years); 51 participants
+- `ses-04` = beginning reading (~73–101 months / 6–8.4 years); 34 participants
+- `ses-05` = emergent reading (~87–121 months / 7–10 years); 24 participants
+
+---
+
+## Data Dictionary for Measures
+
+| Variable | Description |
+|---|---|
+| `participant_id` | Participant ID |
+| `timepoint` | INF=infant, TOD=toddler, PRE=pre-reading, BEG=beginning reading, REA=emergent reading |
+| `session` | Timepoint number |
+| `age` | Age in months |
+| `Sex` | Biological sex (0=male, 1=female) |
+| `MEd` | Maternal education |
+| `HLE` | Home literacy environment composite (z-normalized) |
+| `FHD` | Family history of dyslexia (0=none, 1=first-degree relative) |
+
+---
+
+## Phonological Processing Composite
+
+| Variable | Description |
+|---|---|
+| `pre_word_access_raw` | PRE WJIV word access subtest raw score |
+| `pre_word_fluency_raw` | PRE WJIV word fluency subtest raw score |
+| `pre_substitution_raw` | PRE WJIV substitution subtest raw score |
+
+---
+
+## Literacy-related Subskills (WJ-IV)
+
+| Variable | Description |
+|---|---|
+| `pre_wjiv_oralcomp_raw` | PRE oral comprehension raw score |
+| `pre_wjiv_pvocab_raw` | PRE picture vocabulary raw score |
+| `pre_wjiv_phonproc_standard` | PRE phonological processing standardized composite |
+| `pre_wjiv_orallang_standard` | PRE oral language standardized composite |
+
+---
+
+## Cognitive Abilities (KBIT)
+
+| Variable | Description |
+|---|---|
+| `kbit2_raw` | KBIT reasoning raw score |
+| `kbit2_standard` | KBIT reasoning standard score |
+
+---
+
+## Decoding / Word Reading (WRMT)
+
+| Variable | Description |
+|---|---|
+| `beg_wrmt3_wrd_id_raw` | BEG word identification raw score |
+| `beg_wrmt3_wrdatt_raw` | BEG word attack raw score |
+| `beg_wrmt3_wrd_id_stnd` | BEG word identification standard score |
+| `beg_wrmt3_wrdatt_stnd` | BEG word attack standard score |
+
+---
+
+## Quality Control Variables
+
+| Variable | Description |
+|---|---|
+| `pre_beh_age` | Age at PRE timepoint |
+| `beg_beh_age` | Age at BEG timepoint |
+| `euler` | Euler number rating for T1 images (FreeSurfer metric) |
+| `qc_s` | Visual ratings of FreeSurfer segmentations (0=poor, 1=localized errors, 2=good) |
+| `qc_ARC_L` | Left ARC tract QC |
+| `qc_ARC_R` | Right ARC tract QC |
+| `qc_ILF_L` | Left ILF tract QC |
+| `qc_ILF_R` | Right ILF tract QC |
+| `qc_SLF_L` | Left SLF tract QC |
+| `qc_SLF_R` | Right SLF tract QC |
+
+QC scale for tract ratings:
+
+- 0 = poor
+- 1 = sparser than usual
+- 2 = good
+
+---
+
+# Environmental Characteristics
+
+Socio-economic status (SES) and home literacy environment (HLE) variables were collected through parental questionnaires.
+
+Reference:
+
+Yu X, et al. (2021)  
+*Functional Connectivity in Infancy and Toddlerhood Predicts Long-Term Language and Preliteracy Outcomes.*  
+*Cerebral Cortex* 32, 725–736.
+
+---
+
+## Infant Stage Variables
+
+| Variable | Description |
+|---|---|
+| `inf_num_books_adult_ord` | Number of adult books |
+| `inf_ebooks_adult_ord` | Number of adult e-books |
+| `inf_books_kids_ord` | Number of children’s books |
+| `inf_ebooks_kids_ord` | Number of children’s e-books |
+| `inf_reading_age_child_ord` | Child reading age level |
+| `inf_child_reading_time_ord` | Child reading time |
+| `inf_child_count` | Child counting ability |
+| `inf_child_alphabet` | Child alphabet knowledge |
+| `inf_fam_readership` | Family readership habits |
+| `inf_fam_write_notes` | Family note-writing activities |
+| `inf_fam_write_creative` | Family creative writing activities |
+| `inf_fam_joke` | Family joking/language play activities |
+
+---
+
+## Toddler Stage Variables
+
+| Variable | Description |
+|---|---|
+| `tod_num_books_adult_ord` | Number of adult books |
+| `tod_ebooks_adult_ord` | Number of adult e-books |
+| `tod_books_kids_ord` | Number of children’s books |
+| `tod_ebooks_kids_ord` | Number of children’s e-books |
+| `tod_reading_age_child_ord` | Child reading age level |
+| `tod_child_reading_time_ord` | Child reading time |
+| `tod_child_count` | Child counting ability |
+| `tod_child_alphabet` | Child alphabet knowledge |
+| `tod_fam_readership` | Family readership habits |
+| `tod_fam_write_notes` | Family note-writing activities |
+| `tod_fam_write_creative` | Family creative writing activities |
+| `tod_fam_joke` | Family joking/language play activities |
+
+---
+
+## Preschool Stage Variables
+
+| Variable | Description |
+|---|---|
+| `pre_num_books_adult_ord` | Number of adult books |
+| `pre_ebooks_adult_ord` | Number of adult e-books |
+| `pre_books_kids_ord` | Number of children’s books |
+| `pre_ebooks_kids_ord` | Number of children’s e-books |
+| `pre_reading_age_child_ord` | Child reading age level |
+| `pre_child_reading_time_ord` | Child reading time |
+| `pre_child_count` | Child counting ability |
+| `pre_child_alphabet` | Child alphabet knowledge |
+| `pre_fam_readership` | Family readership habits |
+| `pre_fam_write_notes` | Family note-writing activities |
+| `pre_fam_write_creative` | Family creative writing activities |
+| `pre_fam_joke` | Family joking/language play activities |
+
+---
+
+# MRI Data Information
+
+All New England cohort data were acquired on a **3.0 T Siemens scanner** with a **32-channel head coil**.
+
+Please note that sequence parameters varied across developmental stages to accommodate changes in head size and neuroanatomy.
+
+---
+
+## Structural Data
+
+**59 scans used in the article**
+
+T1-weighted MPRAGE scans:
+
+- TR = 2270–2520 ms
+- TE = 1.66–1.73 ms
+- Field of view = 192–224 mm
+- Voxel size = `1 × 1 × 1 mm^3`
+- 144–176 sagittal slices
+
+---
+
+## Diffusion Data
+
+**77 scans used in the article**
+
+Diffusion acquisition parameters:
+
+- TR = 3800–8320 ms
+- TE = 88–89 ms
+- Flip angle = 90°
+- Field of view = 180–256 mm
+- Voxel size = `2 × 2 × 2 mm^3`
+- 62–78 slices
+- 30 diffusion directions (`b = 1000 s/mm²`)
+- 10–11 non-diffusion-weighted volumes (`b = 0 s/mm²`)
+
+Additional acquisition details:
+
+- Slice acceleration (SMS/MB) factor = 2
+- One reverse phase encoding (posterior-to-anterior) volume included
+
+---
+
+# Defacing Notes
+
+FreeSurfer `mri_deface` was used to deface all T1w images except the following cases, where `mideface` was used.
+
+## Images where `mri_deface` did not sufficiently distort the face
+
+- `sub-04/ses-03`
+- `sub-29/ses-04`
+- `sub-34/ses-02`
+- `sub-52/ses-04`
+- `sub-55/ses-01`
+- `sub-65/ses-04`
+- `sub-70/ses-05`
+- `sub-72/ses-03`
+
+## Images where `mri_deface` cut into brain tissue
+
+- `sub-12/ses-03`
+- `sub-12/ses-04`
+- `sub-15/ses-05`
+- `sub-57/ses-05`
+- `sub-62/ses-05`
+- `sub-79/ses-04`

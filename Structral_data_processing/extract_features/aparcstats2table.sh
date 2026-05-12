@@ -24,12 +24,12 @@ aparcstats2table \
   --skip \
   --tablefile lh_thickness.txt
 
-  aparcstats2table \
+aparcstats2table \
   --subjects $(ls $SUBJECTS_DIR | grep '^sub') \
   --hemi rh \
   --meas thickness \
   --skip \
-  --tablefile rh_thickness.tx
+  --tablefile rh_thickness.txt
 
 2.	surface area
 aparcstats2table \

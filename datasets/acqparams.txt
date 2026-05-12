@@ -1,0 +1,157 @@
+import os
+
+import json
+
+from glob import glob
+
+# =========================
+
+# paths
+
+# =========================
+
+input_root = "/Volumes/xyu/ds006169-1"
+
+output_root = "/Volumes/xyu/ds006169-1/derivatives/dwi_preprocessing"
+
+# =========================
+
+# PE direction mapping
+
+# =========================
+
+pe_map = {
+
+    "i":  [1, 0, 0],
+
+    "i-": [-1, 0, 0],
+
+    "j":  [0, 1, 0],
+
+    "j-": [0, -1, 0],
+
+    "k":  [0, 0, 1],
+
+    "k-": [0, 0, -1]
+
+}
+
+# =========================
+
+# find all dwi json files
+
+# =========================
+
+json_files = glob(
+
+    os.path.join(input_root, "sub-*", "ses-*", "dwi", "*_dwi.json")
+
+)
+
+print(f"Found {len(json_files)} DWI json files")
+
+# =========================
+
+# group by sub/ses
+
+# =========================
+
+sessions = {}
+
+for jf in sorted(json_files):
+
+    try:
+
+        with open(jf, "r") as f:
+
+            meta = json.load(f)
+
+        pe_dir = meta.get("PhaseEncodingDirection")
+
+        trt = meta.get("TotalReadoutTime")
+
+        if pe_dir is None or trt is None:
+
+            print(f"[WARNING] Missing metadata: {jf}")
+
+            continue
+
+        pe_vector = pe_map.get(pe_dir)
+
+        if pe_vector is None:
+
+            print(f"[WARNING] Unknown PE direction: {pe_dir}")
+
+            continue
+
+        # original direction
+
+        acq_line = f"{pe_vector[0]} {pe_vector[1]} {pe_vector[2]} {trt}"
+
+        # reverse direction
+
+        reverse_vector = [-v for v in pe_vector]
+
+        reverse_line = (
+
+            f"{reverse_vector[0]} "
+
+            f"{reverse_vector[1]} "
+
+            f"{reverse_vector[2]} "
+
+            f"{trt}"
+
+        )
+
+        parts = jf.split(os.sep)
+
+        sub = [p for p in parts if p.startswith("sub-")][0]
+
+        ses = [p for p in parts if p.startswith("ses-")][0]
+
+        key = (sub, ses)
+
+        if key not in sessions:
+
+            sessions[key] = []
+
+        # add both directions
+
+        sessions[key].append(acq_line)
+
+        sessions[key].append(reverse_line)
+
+    except Exception as e:
+
+        print(f"[ERROR] {jf}")
+
+        print(e)
+
+# =========================
+
+# write acqparams.txt
+
+# =========================
+
+for (sub, ses), lines in sessions.items():
+
+    # remove duplicates while preserving order
+
+    unique_lines = list(dict.fromkeys(lines))
+
+    out_dir = os.path.join(output_root, sub, ses)
+
+    os.makedirs(out_dir, exist_ok=True)
+
+    out_file = os.path.join(out_dir, "acqparams.txt")
+
+    with open(out_file, "w") as f:
+
+        for line in unique_lines:
+
+            f.write(line + "\n")
+
+    print(f"[OK] Wrote: {out_file}")
+
+print("\nDone.")

@@ -1,0 +1,233 @@
+# generate a QC report for a BIDS dataset, checking for missing files, empty sessions, 
+# and common issues with T1 and DWI data. Outputs a TSV report and summary of issues.
+
+#!/bin/bash
+
+#########################################################
+# DATASET QC SCRIPT
+# Neuroimaging / BIDS-style QC
+#########################################################
+
+DATASET="/Volumes/xyu/ds006169-1"
+
+OUTFILE="dataset_qc.tsv"
+SUMMARY="qc_summary.tsv"
+
+#########################################################
+# CREATE OUTPUT FILES
+#########################################################
+
+echo -e "subject\tsession\tstatus\tissues" > $OUTFILE
+
+echo "===== DATASET QC START ====="
+
+#########################################################
+# LOOP THROUGH SUBJECTS / SESSIONS
+#########################################################
+
+for sub in ${DATASET}/sub-*; do
+
+    [ -d "$sub" ] || continue
+
+    subid=$(basename "$sub")
+
+    for ses in ${sub}/ses-*; do
+
+        [ -d "$ses" ] || continue
+
+        sesid=$(basename "$ses")
+
+        echo "Checking: ${subid} ${sesid}"
+
+        issues=()
+
+        #################################################
+        # CHECK EMPTY SESSION
+        #################################################
+
+        if [ -z "$(find "$ses" -type f)" ]; then
+            issues+=("EMPTY_SESSION")
+        fi
+
+        #################################################
+        # CHECK T1
+        #################################################
+
+        anat_dir="${ses}/anat"
+
+        t1=$(find "$anat_dir" \
+            -name "*T1w.nii.gz" \
+            2>/dev/null | head -n 1)
+
+        if [ -z "$t1" ]; then
+
+            issues+=("NO_T1")
+
+        else
+
+            #################################################
+            # CHECK T1 CORRUPTION
+            #################################################
+
+            dim=$(fslval "$t1" dim1 2>/dev/null)
+
+            if [ -z "$dim" ] || [ "$dim" -eq 0 ]; then
+                issues+=("T1_CORRUPTED")
+            fi
+
+            #################################################
+            # CHECK GZIP CORRUPTION
+            #################################################
+
+            gzip -t "$t1" 2>/dev/null
+
+            if [ $? -ne 0 ]; then
+                issues+=("T1_GZIP_CORRUPTED")
+            fi
+        fi
+
+        #################################################
+        # CHECK DWI
+        #################################################
+
+        dwi_dir="${ses}/dwi"
+
+        dwi=$(find "$dwi_dir" \
+            -name "*dwi.nii.gz" \
+            2>/dev/null | head -n 1)
+
+        if [ -z "$dwi" ]; then
+
+            issues+=("NO_DWI")
+
+        else
+
+            #################################################
+            # CHECK DWI GZIP
+            #################################################
+
+            gzip -t "$dwi" 2>/dev/null
+
+            if [ $? -ne 0 ]; then
+                issues+=("DWI_GZIP_CORRUPTED")
+            fi
+
+            #################################################
+            # CHECK 4D
+            #################################################
+
+            dim4=$(fslval "$dwi" dim4 2>/dev/null)
+
+            if [ -z "$dim4" ] || [ "$dim4" -le 1 ]; then
+                issues+=("DWI_NOT_4D")
+            fi
+
+            #################################################
+            # CHECK BVEC / BVAL / JSON
+            #################################################
+
+            base=${dwi%.nii.gz}
+
+            if [ ! -f "${base}.bval" ]; then
+                issues+=("MISSING_BVAL")
+            fi
+
+            if [ ! -f "${base}.bvec" ]; then
+                issues+=("MISSING_BVEC")
+            fi
+
+            if [ ! -f "${base}.json" ]; then
+                issues+=("MISSING_JSON")
+            fi
+
+            #################################################
+            # CHECK VOLUME COUNT MATCH
+            #################################################
+
+            if [ -f "${base}.bval" ]; then
+
+                nvol=$(fslval "$dwi" dim4 2>/dev/null)
+
+                nbval=$(wc -w < "${base}.bval")
+
+                if [ "$nvol" -ne "$nbval" ]; then
+                    issues+=("VOLUME_COUNT_MISMATCH")
+                fi
+            fi
+        fi
+
+        #################################################
+        # CHECK FMAP / PA
+        #################################################
+
+        fmap_dir="${ses}/fmap"
+
+        if [ ! -d "$fmap_dir" ]; then
+
+            issues+=("NO_FMAP")
+
+        else
+
+            pa=$(find "$fmap_dir" \
+                \( -name "*PA*.nii.gz" -o -name "*dir-PA*.nii.gz" \) \
+                2>/dev/null | head -n 1)
+
+            if [ -z "$pa" ]; then
+                issues+=("NO_PA")
+            fi
+        fi
+
+        #################################################
+        # OUTPUT RESULTS
+        #################################################
+
+        if [ ${#issues[@]} -eq 0 ]; then
+
+            echo -e "${subid}\t${sesid}\tOK\tNONE" >> $OUTFILE
+
+        else
+
+            issue_string=$(IFS=, ; echo "${issues[*]}")
+
+            echo -e "${subid}\t${sesid}\tISSUES\t${issue_string}" >> $OUTFILE
+
+        fi
+
+    done
+done
+
+#########################################################
+# CREATE SUMMARY TABLE
+#########################################################
+
+echo -e "issue\tcount" > $SUMMARY
+
+grep ISSUES $OUTFILE | \
+cut -f4 | \
+tr ',' '\n' | \
+sort | \
+uniq -c | \
+awk '{print $2 "\t" $1}' >> $SUMMARY
+
+#########################################################
+# COUNT OK SESSIONS
+#########################################################
+
+okcount=$(grep -c $'\tOK\t' $OUTFILE)
+
+echo -e "OK\t${okcount}" >> $SUMMARY
+
+#########################################################
+# FINISH
+#########################################################
+
+echo ""
+echo "===== QC FINISHED ====="
+
+echo "Detailed QC report:"
+echo "$OUTFILE"
+
+echo ""
+
+echo "QC summary:"
+echo "$SUMMARY"
